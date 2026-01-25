@@ -28,12 +28,12 @@ const buildTree = async (seed, complexity = "simple", onProgress = null) => {
   const trunkRgb = hslToRgb(
     characteristics.trunkHue,
     characteristics.trunkSaturation,
-    characteristics.trunkLightness
+    characteristics.trunkLightness,
   );
   const leafRgb = hslToRgb(
     characteristics.leafHue,
     characteristics.leafSaturation,
-    characteristics.leafLightness
+    characteristics.leafLightness,
   );
 
   const trunkMaterial = createTrunkMaterial(trunkRgb);
@@ -48,7 +48,7 @@ const buildTree = async (seed, complexity = "simple", onProgress = null) => {
     depth,
     parentUp,
     branchRng,
-    parentDirection = null
+    parentDirection = null,
   ) => {
     // Update max height
     const endY = startPos.y + direction.y * length;
@@ -73,7 +73,7 @@ const buildTree = async (seed, complexity = "simple", onProgress = null) => {
       topRadius,
       radius,
       length,
-      segments
+      segments,
     );
     const branchMesh = new THREE.Mesh(branchGeometry, trunkMaterial);
 
@@ -130,7 +130,7 @@ const buildTree = async (seed, complexity = "simple", onProgress = null) => {
       const baseAngle = i * baseAngleStep;
       const angleVariation = branchRng.range(
         -baseAngleStep * 0.2,
-        baseAngleStep * 0.2
+        baseAngleStep * 0.2,
       );
       const asymmetryInfluence =
         characteristics.asymmetryFactor * branchRng.range(-20, 20);
@@ -154,7 +154,7 @@ const buildTree = async (seed, complexity = "simple", onProgress = null) => {
         const continuityFactor = Math.min(0.8, depthRatio * 1.0);
         baseDirection = baseDirection.lerp(
           parentDirection.clone().normalize(),
-          continuityFactor
+          continuityFactor,
         );
         baseDirection.normalize();
       }
@@ -177,7 +177,7 @@ const buildTree = async (seed, complexity = "simple", onProgress = null) => {
         const randomAxis = new THREE.Vector3(
           branchRng.range(-1, 1),
           branchRng.range(-0.2, 0.2),
-          branchRng.range(-1, 1)
+          branchRng.range(-1, 1),
         ).normalize();
         newDirection.applyAxisAngle(randomAxis, additionalSpread);
       }
@@ -197,7 +197,7 @@ const buildTree = async (seed, complexity = "simple", onProgress = null) => {
         depth - 1,
         parentUp.clone(),
         new SeededRandom(branchRng.next()),
-        direction.clone()
+        direction.clone(),
       );
     }
   };
@@ -206,7 +206,7 @@ const buildTree = async (seed, complexity = "simple", onProgress = null) => {
   const trunkDirection = new THREE.Vector3(
     rng.range(-characteristics.trunkLean, characteristics.trunkLean),
     1,
-    rng.range(-characteristics.trunkLean, characteristics.trunkLean)
+    rng.range(-characteristics.trunkLean, characteristics.trunkLean),
   ).normalize();
 
   await buildBranch(
@@ -217,7 +217,7 @@ const buildTree = async (seed, complexity = "simple", onProgress = null) => {
     characteristics.maxDepth,
     new THREE.Vector3(0, 1, 0),
     new SeededRandom(rng.next()),
-    null
+    null,
   );
 
   // Add roots
@@ -225,7 +225,7 @@ const buildTree = async (seed, complexity = "simple", onProgress = null) => {
     characteristics.trunkThickness,
     trunkDirection,
     trunkMaterial,
-    seed
+    characteristics,
   );
   group.add(rootMesh);
 
@@ -236,7 +236,7 @@ const buildTree = async (seed, complexity = "simple", onProgress = null) => {
         leafData.size *
         leafData.rng.range(
           1 / characteristics.leafVariation,
-          characteristics.leafVariation
+          characteristics.leafVariation,
         ) *
         (complexity === "simple" ? 1.2 : 1.5);
 
@@ -244,7 +244,7 @@ const buildTree = async (seed, complexity = "simple", onProgress = null) => {
       const leafGeometry = createLeafGeometry(
         finalSize,
         leafData.shape,
-        complexity
+        complexity,
       );
       const leaf = new THREE.Mesh(leafGeometry, leafMaterial);
       leaf.position.copy(leafData.position);
@@ -273,8 +273,8 @@ const buildTree = async (seed, complexity = "simple", onProgress = null) => {
           new THREE.Vector3(
             leafData.rng.range(-clusterVariation, clusterVariation),
             leafData.rng.range(-clusterVariation, clusterVariation),
-            leafData.rng.range(-clusterVariation, clusterVariation)
-          )
+            leafData.rng.range(-clusterVariation, clusterVariation),
+          ),
         );
         clusterLeaf.scale.setScalar(leafData.rng.range(0.8, 1.2));
 

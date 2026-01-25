@@ -4,7 +4,6 @@
       <TreeGenerator3D
         ref="treeGenerator"
         :isDark="isDark"
-        :forceFullMode="true"
         class="tree-canvas-3d"
       />
 
@@ -57,7 +56,7 @@
               <Copy :size="18" />
             </button>
             <button
-              @click="generateNewTree(treeGenerator, 8)"
+              @click="generateNewTree(treeGenerator, 12)"
               class="seed-control refresh"
               title="Nova seed aleatória"
             >
@@ -133,7 +132,7 @@
 
 <script setup>
 import { Check, Copy, RefreshCw, X } from "lucide-vue-next";
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 import TreeGenerator3D from "../components/TreeGenerator3D.vue";
 import { useSeeds } from "../composables/useSeeds.js";
 
@@ -157,6 +156,21 @@ const {
   generateNewTree,
 } = useSeeds();
 
+// Watcher para reagir quando initialSeed mudar (vinda da loja)
+watch(
+  () => props.initialSeed,
+  (newSeed) => {
+    if (newSeed) {
+      seedInput.value = newSeed;
+      setTimeout(() => {
+        if (treeGenerator.value) {
+          treeGenerator.value.generateTreeFromSeed(newSeed);
+        }
+      }, 100);
+    }
+  },
+);
+
 onMounted(() => {
   if (props.initialSeed) {
     // Se tem seed inicial (vinda da loja), usa ela
@@ -167,8 +181,8 @@ onMounted(() => {
       }
     }, 100);
   } else {
-    // Senão, gera seed nova de 8 dígitos (mais fácil de lembrar)
-    const initialSeed = generateFullSeed(8);
+    // Senão, gera seed nova de 12 dígitos para modo completo
+    const initialSeed = generateFullSeed(12);
     seedInput.value = initialSeed;
 
     setTimeout(() => {

@@ -84,6 +84,11 @@ const generateTreeCharacteristics = (seed) => {
     // Asymmetry and natural variation
     asymmetryFactor: rng.range(0.0, 0.4), // How asymmetric the tree is
     naturalVariation: rng.range(0.1, 0.5), // Random variation in all parameters
+
+    // Root characteristics (new parameters)
+    rootHeight: rng.range(0.8, 2.5), // Altura do cone da raiz (multiplicador do trunkThickness)
+    rootBaseRadius: rng.range(2.0, 5.0), // Diâmetro da base da raiz (multiplicador do trunkThickness)
+    rootTopRadius: rng.range(0.7, 1.3), // Raio do topo da raiz (multiplicador do trunkThickness)
   };
 
   return characteristics;
@@ -131,12 +136,12 @@ const buildTreeLiveAsync = async (seed) => {
   const trunkRgb = hslToRgb(
     characteristics.trunkHue,
     characteristics.trunkSaturation,
-    characteristics.trunkLightness
+    characteristics.trunkLightness,
   );
   const leafRgb = hslToRgb(
     characteristics.leafHue,
     characteristics.leafSaturation,
-    characteristics.leafLightness
+    characteristics.leafLightness,
   );
 
   const trunkMaterial = new THREE.MeshPhongMaterial({
@@ -150,14 +155,14 @@ const buildTreeLiveAsync = async (seed) => {
   const trunkDirection = new THREE.Vector3(
     rng.range(-characteristics.trunkLean, characteristics.trunkLean),
     1,
-    rng.range(-characteristics.trunkLean, characteristics.trunkLean)
+    rng.range(-characteristics.trunkLean, characteristics.trunkLean),
   ).normalize();
 
   const rootMesh = createTreeRoots(
     characteristics.trunkThickness,
     trunkDirection,
     trunkMaterial,
-    seedToNumber(seed)
+    characteristics,
   );
   group.add(rootMesh);
 
@@ -168,7 +173,7 @@ const buildTreeLiveAsync = async (seed) => {
     characteristics,
     rng,
     trunkMaterial,
-    leafMaterial
+    leafMaterial,
   );
 
   currentPhase.value = "Concluído!";
@@ -183,7 +188,7 @@ const buildBranchesLive = async (
   characteristics,
   rng,
   trunkMaterial,
-  leafMaterial
+  leafMaterial,
 ) => {
   const branchQueue = [];
   const allBranchTips = []; // Collect ALL tips, even when we stop early
@@ -199,7 +204,7 @@ const buildBranchesLive = async (
     direction: new THREE.Vector3(
       rng.range(-characteristics.trunkLean, characteristics.trunkLean),
       1,
-      rng.range(-characteristics.trunkLean, characteristics.trunkLean)
+      rng.range(-characteristics.trunkLean, characteristics.trunkLean),
     ).normalize(),
     length: characteristics.trunkHeight,
     radius: characteristics.trunkThickness,
@@ -246,14 +251,14 @@ const buildBranchesLive = async (
         group,
         characteristics,
         trunkMaterial,
-        hasLeaves // Pass the global decision
+        hasLeaves, // Pass the global decision
       );
 
       branchCount++;
       processedBranches++;
       generationProgress.value = Math.min(
         85,
-        (branchCount / characteristics.maxBranches) * 85
+        (branchCount / characteristics.maxBranches) * 85,
       );
     }
 
@@ -268,7 +273,7 @@ const buildBranchesLive = async (
           .add(
             remainingBranch.direction
               .clone()
-              .multiplyScalar(remainingBranch.length)
+              .multiplyScalar(remainingBranch.length),
           );
 
         if (hasLeaves) {
@@ -276,7 +281,7 @@ const buildBranchesLive = async (
             position: endPos,
             size: Math.max(
               0.1,
-              remainingBranch.radius * characteristics.leafSize * 2
+              remainingBranch.radius * characteristics.leafSize * 2,
             ), // Larger base size
             clusters: characteristics.leafClusters,
             shape: characteristics.leafShape,
@@ -306,7 +311,7 @@ const processBranchLive = async (
   group,
   characteristics,
   trunkMaterial,
-  hasLeaves
+  hasLeaves,
 ) => {
   const {
     startPos,
@@ -339,7 +344,7 @@ const processBranchLive = async (
     topRadius,
     radius,
     length,
-    6
+    6,
   );
   const branchMesh = new THREE.Mesh(branchGeometry, trunkMaterial);
 
@@ -363,11 +368,11 @@ const processBranchLive = async (
   // Base branching factor reduces as we get further from trunk
   const depthMultiplier = Math.pow(
     characteristics.branchingReduction,
-    maxDepth - depth
+    maxDepth - depth,
   );
   const dynamicBranchingFactor = Math.max(
     1,
-    Math.round(characteristics.branchingFactor * depthMultiplier)
+    Math.round(characteristics.branchingFactor * depthMultiplier),
   );
 
   // Add some randomness but keep the depth-based trend
@@ -377,9 +382,9 @@ const processBranchLive = async (
       characteristics.branchingFactor,
       branchRng.int(
         Math.max(1, dynamicBranchingFactor - 1),
-        dynamicBranchingFactor + 1
-      )
-    )
+        dynamicBranchingFactor + 1,
+      ),
+    ),
   );
 
   const numBranches = finalBranchingFactor;
@@ -417,7 +422,7 @@ const processBranchLive = async (
     // Apply horizontal rotation with spread factor
     newDirection.applyAxisAngle(
       direction,
-      horizontalAngle * characteristics.horizontalSpread
+      horizontalAngle * characteristics.horizontalSpread,
     );
 
     // Add natural variation
@@ -450,7 +455,7 @@ const addLeavesLive = async (
   leafQueue,
   group,
   leafMaterial,
-  characteristics
+  characteristics,
 ) => {
   const LEAF_CHUNK_SIZE = 3;
 
@@ -467,7 +472,7 @@ const addLeavesLive = async (
         leafData.size *
         leafData.rng.range(
           1 / characteristics.leafVariation,
-          characteristics.leafVariation
+          characteristics.leafVariation,
         ) *
         1.5; // Make leaves much larger
 
@@ -495,8 +500,8 @@ const addLeavesLive = async (
           new THREE.Vector3(
             leafData.rng.range(-clusterVariation, clusterVariation),
             leafData.rng.range(-clusterVariation, clusterVariation),
-            leafData.rng.range(-clusterVariation, clusterVariation)
-          )
+            leafData.rng.range(-clusterVariation, clusterVariation),
+          ),
         );
         clusterLeaf.scale.setScalar(leafData.rng.range(0.9, 1.1)); // Less variation in size
 
@@ -530,7 +535,7 @@ const initThreeJS = () => {
     75,
     canvasContainer.value.clientWidth / canvasContainer.value.clientHeight,
     0.1,
-    1000
+    1000,
   );
   camera.position.set(6, 4, 6);
   camera.lookAt(0, 2, 0);
@@ -539,7 +544,7 @@ const initThreeJS = () => {
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(
     canvasContainer.value.clientWidth,
-    canvasContainer.value.clientHeight
+    canvasContainer.value.clientHeight,
   );
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -579,7 +584,7 @@ const initThreeJS = () => {
       // Limit vertical rotation
       cameraAngleX = Math.max(
         -Math.PI / 2 + 0.1,
-        Math.min(Math.PI / 2 - 0.1, cameraAngleX)
+        Math.min(Math.PI / 2 - 0.1, cameraAngleX),
       );
 
       updateCameraPosition();
@@ -629,7 +634,7 @@ const initThreeJS = () => {
 
       cameraAngleX = Math.max(
         -Math.PI / 2 + 0.1,
-        Math.min(Math.PI / 2 - 0.1, cameraAngleX)
+        Math.min(Math.PI / 2 - 0.1, cameraAngleX),
       );
 
       updateCameraPosition();
@@ -724,8 +729,10 @@ const generateTreeFromSeed = async (seed) => {
     }
 
     // Decide complexity based on seed length
+    console.log("Seed:", seed, "Length:", seed.length);
     if (seed.length === 8) {
       // Simple mode - use TreeGridCell component
+      console.log("Using simple mode (TreeGridCell)");
       useSimpleMode.value = true;
 
       // Hide the main 3D canvas
@@ -740,6 +747,7 @@ const generateTreeFromSeed = async (seed) => {
       generationProgress.value = 100;
     } else {
       // Complex mode - use buildTreeLiveAsync (full detail)
+      console.log("Using complex mode (buildTreeLiveAsync)");
       useSimpleMode.value = false;
 
       // Show the main 3D canvas
@@ -766,7 +774,7 @@ const handleResize = () => {
   camera.updateProjectionMatrix();
   renderer.setSize(
     canvasContainer.value.clientWidth,
-    canvasContainer.value.clientHeight
+    canvasContainer.value.clientHeight,
   );
 };
 
@@ -794,7 +802,7 @@ watch(
       newGround.name = "ground";
       scene.add(newGround);
     }
-  }
+  },
 );
 
 onMounted(() => {

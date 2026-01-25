@@ -43,6 +43,11 @@ export const generateSimpleTreeCharacteristics = (seed) => {
     branchOpenness: rng.range(0.1, 8.0), // Variação ainda mais extrema: árvores muito achatadas vs muito arredondadas
     asymmetryFactor: rng.range(0.0, 0.5), // Reduzido para não interferir muito na distribuição uniforme
     naturalVariation: rng.range(0.05, 0.4), // More natural variation
+
+    // Root characteristics (new parameters)
+    rootHeight: rng.range(0.8, 2.5), // Altura do cone da raiz (multiplicador do trunkThickness)
+    rootBaseRadius: rng.range(2.0, 5.0), // Diâmetro da base da raiz (multiplicador do trunkThickness)
+    rootTopRadius: rng.range(0.7, 1.3), // Raio do topo da raiz (multiplicador do trunkThickness)
   };
 };
 

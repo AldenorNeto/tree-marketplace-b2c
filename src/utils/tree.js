@@ -20,7 +20,7 @@ export const createLeafGeometry = (size, shape, complexity = "full") => {
       const elongatedGeometry = new THREE.SphereGeometry(
         size,
         segments,
-        heightSegments
+        heightSegments,
       );
       elongatedGeometry.scale(0.8, 2.0, 0.8);
       return elongatedGeometry;
@@ -34,7 +34,7 @@ export const createLeafGeometry = (size, shape, complexity = "full") => {
       const flatGeometry = new THREE.SphereGeometry(
         size,
         segments,
-        heightSegments
+        heightSegments,
       );
       const scaleX = complexity === "simple" ? 2.0 : 1.8;
       const scaleY = complexity === "simple" ? 0.2 : 0.4;
@@ -62,7 +62,7 @@ export const createTreeRoots = (
   trunkThickness,
   trunkDirection,
   trunkMaterial,
-  seed
+  seed,
 ) => {
   const rng = new SeededRandom(seed + 54321);
 
@@ -74,14 +74,14 @@ export const createTreeRoots = (
     rootTopRadius,
     rootBottomRadius,
     rootHeight,
-    8
+    8,
   );
 
   const rootMesh = new THREE.Mesh(rootGeometry, trunkMaterial);
   rootMesh.position.set(0, -rootHeight * 0.4, 0);
 
   const trunkLean = Math.sqrt(
-    trunkDirection.x * trunkDirection.x + trunkDirection.z * trunkDirection.z
+    trunkDirection.x * trunkDirection.x + trunkDirection.z * trunkDirection.z,
   );
   if (trunkLean > 0.05) {
     rootMesh.rotation.x = trunkDirection.x * 0.2;
@@ -229,7 +229,7 @@ export const hslToRgb = (h, s, l) => {
 export const buildTree = async (
   seed,
   complexity = "simple",
-  onProgress = null
+  onProgress = null,
 ) => {
   const characteristics = generateTreeCharacteristics(seed, complexity);
   const rng = new SeededRandom(seed);
@@ -244,12 +244,12 @@ export const buildTree = async (
   const trunkRgb = hslToRgb(
     characteristics.trunkHue,
     characteristics.trunkSaturation,
-    characteristics.trunkLightness
+    characteristics.trunkLightness,
   );
   const leafRgb = hslToRgb(
     characteristics.leafHue,
     characteristics.leafSaturation,
-    characteristics.leafLightness
+    characteristics.leafLightness,
   );
 
   const trunkMaterial = createTrunkMaterial(trunkRgb);
@@ -263,7 +263,7 @@ export const buildTree = async (
     depth,
     parentUp,
     branchRng,
-    parentDirection = null
+    parentDirection = null,
   ) => {
     const endY = startPos.y + direction.y * length;
     maxHeight = Math.max(maxHeight, endY);
@@ -286,7 +286,7 @@ export const buildTree = async (
       topRadius,
       radius,
       length,
-      segments
+      segments,
     );
     const branchMesh = new THREE.Mesh(branchGeometry, trunkMaterial);
 
@@ -338,7 +338,7 @@ export const buildTree = async (
       const baseAngle = i * baseAngleStep;
       const angleVariation = branchRng.range(
         -baseAngleStep * 0.2,
-        baseAngleStep * 0.2
+        baseAngleStep * 0.2,
       );
       const asymmetryInfluence =
         characteristics.asymmetryFactor * branchRng.range(-20, 20);
@@ -361,7 +361,7 @@ export const buildTree = async (
         const continuityFactor = Math.min(0.8, depthRatio * 1.0);
         baseDirection = baseDirection.lerp(
           parentDirection.clone().normalize(),
-          continuityFactor
+          continuityFactor,
         );
         baseDirection.normalize();
       }
@@ -383,7 +383,7 @@ export const buildTree = async (
         const randomAxis = new THREE.Vector3(
           branchRng.range(-1, 1),
           branchRng.range(-0.2, 0.2),
-          branchRng.range(-1, 1)
+          branchRng.range(-1, 1),
         ).normalize();
         newDirection.applyAxisAngle(randomAxis, additionalSpread);
       }
@@ -403,7 +403,7 @@ export const buildTree = async (
         depth - 1,
         parentUp.clone(),
         new SeededRandom(branchRng.next()),
-        direction.clone()
+        direction.clone(),
       );
     }
   };
@@ -411,7 +411,7 @@ export const buildTree = async (
   const trunkDirection = new THREE.Vector3(
     rng.range(-characteristics.trunkLean, characteristics.trunkLean),
     1,
-    rng.range(-characteristics.trunkLean, characteristics.trunkLean)
+    rng.range(-characteristics.trunkLean, characteristics.trunkLean),
   ).normalize();
 
   await buildBranch(
@@ -422,14 +422,14 @@ export const buildTree = async (
     characteristics.maxDepth,
     new THREE.Vector3(0, 1, 0),
     new SeededRandom(rng.next()),
-    null
+    null,
   );
 
   const rootMesh = createTreeRoots(
     characteristics.trunkThickness,
     trunkDirection,
     trunkMaterial,
-    seed
+    characteristics,
   );
   group.add(rootMesh);
 
@@ -439,14 +439,14 @@ export const buildTree = async (
         leafData.size *
         leafData.rng.range(
           1 / characteristics.leafVariation,
-          characteristics.leafVariation
+          characteristics.leafVariation,
         ) *
         (complexity === "simple" ? 1.2 : 1.5);
 
       const leafGeometry = createLeafGeometry(
         finalSize,
         leafData.shape,
-        complexity
+        complexity,
       );
       const leaf = new THREE.Mesh(leafGeometry, leafMaterial);
       leaf.position.copy(leafData.position);
@@ -474,8 +474,8 @@ export const buildTree = async (
           new THREE.Vector3(
             leafData.rng.range(-clusterVariation, clusterVariation),
             leafData.rng.range(-clusterVariation, clusterVariation),
-            leafData.rng.range(-clusterVariation, clusterVariation)
-          )
+            leafData.rng.range(-clusterVariation, clusterVariation),
+          ),
         );
         clusterLeaf.scale.setScalar(leafData.rng.range(0.8, 1.2));
 

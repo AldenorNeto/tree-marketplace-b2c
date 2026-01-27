@@ -1,20 +1,15 @@
 <template>
   <div class="shop-page">
-    <!-- Banner -->
     <section class="banner">
       <div class="banner-content">
         <h1>🌳 Tree Marketplace</h1>
         <p>Encontre a árvore perfeita para seu jardim</p>
-        <button class="cta-button">Explorar Árvores</button>
       </div>
     </section>
 
-    <!-- Grid de Produtos -->
     <section class="products">
-      <h2>Nossas Árvores</h2>
       <div class="product-grid">
         <div v-for="(tree, index) in trees" :key="index" class="product-card">
-          <!-- Canvas com a árvore 3D -->
           <div class="tree-canvas-preview">
             <TreeGridCell :isDark="isDark" :seed="tree.seed" />
           </div>
@@ -52,13 +47,11 @@ const { generateRandomSeed } = useSeeds();
 
 const trees = ref([]);
 
-// Função para "dar zoom" na árvore - redireciona para Create com a seed
 const zoomIntoTree = (seed) => {
   emit("zoom-tree", seed);
   router.push("/create");
 };
 
-// Gera 8 árvores aleatórias no carregamento
 onMounted(() => {
   for (let i = 0; i < 8; i++) {
     trees.value.push({
@@ -73,7 +66,6 @@ onMounted(() => {
   min-height: calc(100vh - 80px);
 }
 
-/* Banner */
 .banner {
   background: linear-gradient(135deg, #27ae60, #2ecc71);
   color: white;
@@ -109,7 +101,6 @@ onMounted(() => {
   transform: translateY(-2px);
 }
 
-/* Products */
 .products {
   padding: 4rem 2rem;
   max-width: 1200px;
@@ -138,7 +129,9 @@ onMounted(() => {
   padding: 1.5rem;
   text-align: center;
   box-shadow: 0 5px 15px var(--shadow);
-  transition: transform 0.3s, box-shadow 0.3s;
+  transition:
+    transform 0.3s,
+    box-shadow 0.3s;
   display: flex;
   flex-direction: column;
   align-items: center;

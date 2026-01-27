@@ -1,7 +1,7 @@
 <script setup>
-import { Moon, Sun } from "lucide-vue-next";
 import { ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import Navbar from "./components/Navbar.vue";
 import CreateView from "./views/CreateView.vue";
 import ShopView from "./views/ShopView.vue";
 
@@ -11,7 +11,6 @@ const currentPage = ref("Create");
 const isDark = ref(false);
 const selectedSeed = ref(null);
 
-// Sincroniza currentPage com a rota
 watch(
   () => route.meta.page,
   (newPage) => {
@@ -22,21 +21,16 @@ watch(
   { immediate: true },
 );
 
-const setPage = (page) => {
-  router.push(`/${page.toLowerCase()}`);
-};
-
 const toggleTheme = () => {
   isDark.value = !isDark.value;
 };
 
-// Função para lidar com o zoom da árvore vinda da loja
 const handleZoomTree = (seed) => {
   selectedSeed.value = seed;
-  setPage("Create");
+  currentPage.value = "Create";
+  router.push("/create");
 };
 
-// Limpa a seed selecionada quando sai da página Create
 watch(currentPage, (newPage) => {
   if (newPage !== "Create") {
     selectedSeed.value = null;
@@ -46,39 +40,19 @@ watch(currentPage, (newPage) => {
 
 <template>
   <div :class="{ 'dark-theme': isDark, 'light-theme': !isDark }" class="app">
-    <header class="navbar">
-      <nav>
-        <button
-          @click="setPage('Create')"
-          :class="{ active: currentPage === 'Create' }"
-          class="nav-button"
-        >
-          Faça sua Árvore
-        </button>
-        <button
-          @click="setPage('Shop')"
-          :class="{ active: currentPage === 'Shop' }"
-          class="nav-button"
-        >
-          Loja
-        </button>
-      </nav>
-
-      <button @click="toggleTheme" class="theme-toggle">
-        <Sun v-if="isDark" :size="20" />
-        <Moon v-else :size="20" />
-      </button>
-    </header>
+    <Navbar
+      :currentPage="currentPage"
+      :isDark="isDark"
+      @toggle-theme="toggleTheme"
+    />
 
     <main class="content">
-      <!-- Página Faça sua Árvore 3D -->
       <CreateView
         v-if="currentPage === 'Create'"
         :isDark="isDark"
         :initialSeed="selectedSeed"
       />
 
-      <!-- Página Loja -->
       <ShopView
         v-if="currentPage === 'Shop'"
         :isDark="isDark"
@@ -88,8 +62,7 @@ watch(currentPage, (newPage) => {
   </div>
 </template>
 
-<style scoped>
-/* Variáveis de tema */
+<style>
 .light-theme {
   --bg-primary: #ffffff;
   --bg-secondary: #f8f9fa;
@@ -111,62 +84,14 @@ watch(currentPage, (newPage) => {
   --shadow: rgba(0, 0, 0, 0.3);
   --canvas-bg: #2a2a2a;
 }
+</style>
 
+<style scoped>
 .app {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   min-height: 100vh;
   transition: all 0.3s ease;
-}
-
-/* Navbar */
-.navbar {
-  background-color: var(--navbar-bg);
-  padding: 1rem 2rem;
-  box-shadow: 0 2px 4px var(--shadow);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-nav {
-  display: flex;
-  gap: 1rem;
-}
-
-.nav-button {
-  background: none;
-  border: none;
-  color: white;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: background-color 0.3s;
-}
-
-.nav-button:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.nav-button.active {
-  background-color: #27ae60;
-}
-
-.theme-toggle {
-  background: none;
-  border: none;
-  color: white;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 50%;
-  transition: background-color 0.3s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.theme-toggle:hover {
-  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .content {

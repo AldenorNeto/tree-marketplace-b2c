@@ -16,8 +16,8 @@
             v-model="seedInput"
             @focus="showSeedActions = true"
             @blur="handleSeedBlur"
-            @keyup.enter="confirmSeed(treeGenerator)"
-            @keyup.escape="cancelSeed(treeGenerator)"
+            @keyup.enter="handleConfirmSeed"
+            @keyup.escape="handleCancelSeed"
             class="seed-input"
             placeholder="8 ou 12 chars"
             maxlength="12"
@@ -26,7 +26,7 @@
           <!-- Ações quando focado -->
           <div v-if="showSeedActions" class="seed-actions">
             <button
-              @click="confirmSeed(treeGenerator)"
+              @click="handleConfirmSeed"
               :disabled="!isValidSeed"
               class="seed-action confirm"
               :title="
@@ -38,7 +38,7 @@
               <Check :size="18" />
             </button>
             <button
-              @click="cancelSeed(treeGenerator)"
+              @click="handleCancelSeed"
               class="seed-action cancel"
               title="Cancelar"
             >
@@ -49,16 +49,17 @@
           <!-- Ações normais -->
           <div v-else class="seed-controls">
             <button
-              @click="copySeed(treeGenerator)"
+              @click="handleCopySeed"
               class="seed-control copy"
               title="Copiar seed"
             >
               <Copy :size="18" />
             </button>
             <button
-              @click="generateNewTree(treeGenerator, 12)"
+              @click="handleRefreshClick"
               class="seed-control refresh"
               title="Nova seed aleatória"
+              :disabled="treeGenerator?.isGenerating?.()"
             >
               <RefreshCw :size="18" />
             </button>
@@ -148,15 +149,80 @@ const {
   showSeedActions,
   isValidSeed,
   generateFullSeed,
-  confirmSeed,
-  cancelSeed,
   handleSeedBlur,
-  copySeed,
-  syncSeedInput,
-  generateNewTree,
 } = useSeeds();
 
-// Watcher para reagir quando initialSeed mudar (vinda da loja)
+const handleRefreshClick = async () => {
+  if (!treeGenerator.value) return;
+
+  try {
+    const newSeed = generateFullSeed(12);
+    seedInput.value = newSeed;
+
+    if (treeGenerator.value.generateTreeFromSeed) {
+      await treeGenerator.value.generateTreeFromSeed(newSeed);
+    }
+  } catch (error) {
+    console.error("Erro ao gerar nova árvore:", error);
+  }
+};
+
+const handleConfirmSeed = async () => {
+  if (!treeGenerator.value || !isValidSeed.value) return;
+
+  try {
+    const normalizedSeed = seedInput.value.toUpperCase().trim();
+
+    if (treeGenerator.value.generateTreeFromSeed) {
+      await treeGenerator.value.generateTreeFromSeed(normalizedSeed);
+      showSeedActions.value = false;
+    }
+  } catch (error) {
+    console.error("Erro ao confirmar seed:", error);
+  }
+};
+
+const handleCancelSeed = () => {
+  if (!treeGenerator.value) {
+    showSeedActions.value = false;
+    return;
+  }
+
+  try {
+    if (treeGenerator.value.getCurrentSeed) {
+      const currentSeed = treeGenerator.value.getCurrentSeed();
+      seedInput.value = currentSeed;
+    }
+    showSeedActions.value = false;
+  } catch (error) {
+    console.error("Erro ao cancelar seed:", error);
+    showSeedActions.value = false;
+  }
+};
+
+const handleCopySeed = async () => {
+  if (!treeGenerator.value) return;
+
+  try {
+    if (treeGenerator.value.getCurrentSeed) {
+      const currentSeed = treeGenerator.value.getCurrentSeed();
+
+      try {
+        await navigator.clipboard.writeText(currentSeed);
+        seedInput.value = currentSeed;
+      } catch (clipboardError) {
+        console.error(
+          "Erro ao copiar para área de transferência:",
+          clipboardError,
+        );
+        seedInput.value = currentSeed;
+      }
+    }
+  } catch (error) {
+    console.error("Erro ao copiar seed:", error);
+  }
+};
+
 watch(
   () => props.initialSeed,
   (newSeed) => {
@@ -409,6 +475,12 @@ defineExpose({
 .seed-control.refresh:hover {
   color: #f39c12;
   box-shadow: 0 0 20px rgba(243, 156, 18, 0.3);
+}
+
+.seed-control:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 /* Modal de Dados da Árvore */

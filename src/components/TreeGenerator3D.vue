@@ -685,9 +685,6 @@ const initThreeJS = () => {
   ground.name = "ground"; // Add name for easy reference
   scene.add(ground);
 
-  // Generate initial tree with random seed
-  generateRandomTree();
-
   // Animation loop (no automatic rotation)
   const animate = () => {
     animationId = requestAnimationFrame(animate);
@@ -703,7 +700,6 @@ const generateRandomTree = async () => {
 };
 
 const generateTreeFromSeed = async (seed) => {
-  // Cancel any ongoing generation
   generationCancelled = true;
   await new Promise((resolve) => setTimeout(resolve, 50)); // Wait for cancellation
 
@@ -729,10 +725,8 @@ const generateTreeFromSeed = async (seed) => {
     }
 
     // Decide complexity based on seed length
-    console.log("Seed:", seed, "Length:", seed.length);
     if (seed.length === 8) {
       // Simple mode - use TreeGridCell component
-      console.log("Using simple mode (TreeGridCell)");
       useSimpleMode.value = true;
 
       // Hide the main 3D canvas
@@ -747,7 +741,6 @@ const generateTreeFromSeed = async (seed) => {
       generationProgress.value = 100;
     } else {
       // Complex mode - use buildTreeLiveAsync (full detail)
-      console.log("Using complex mode (buildTreeLiveAsync)");
       useSimpleMode.value = false;
 
       // Show the main 3D canvas

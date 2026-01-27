@@ -2,18 +2,18 @@
   <header class="navbar">
     <nav>
       <button
-        @click="setPage('Create')"
-        :class="{ active: currentPage === 'Create' }"
-        class="nav-button"
-      >
-        Faça sua Árvore
-      </button>
-      <button
         @click="setPage('Shop')"
         :class="{ active: currentPage === 'Shop' }"
         class="nav-button"
       >
-        Loja
+        Explorar
+      </button>
+      <button
+        @click="setPage('Create')"
+        :class="{ active: currentPage === 'Create' }"
+        class="nav-button"
+      >
+        Visão Dinâmica
       </button>
     </nav>
 

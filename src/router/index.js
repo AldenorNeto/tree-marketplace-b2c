@@ -4,7 +4,7 @@ import App from "../App.vue";
 const routes = [
   {
     path: "/",
-    redirect: "/create",
+    redirect: "/shop",
   },
   {
     path: "/create",

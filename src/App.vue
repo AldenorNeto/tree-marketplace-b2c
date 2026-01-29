@@ -2,14 +2,17 @@
 import { ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Navbar from "./components/Navbar.vue";
+import { useTheme } from "./composables/useTheme.js";
 import CreateView from "./views/CreateView.vue";
 import ShopView from "./views/ShopView.vue";
 
 const route = useRoute();
 const router = useRouter();
 const currentPage = ref("Create");
-const isDark = ref(false);
 const selectedSeed = ref(null);
+
+// Usa o composable de tema
+const { isDark, toggleTheme } = useTheme();
 
 watch(
   () => route.meta.page,
@@ -20,10 +23,6 @@ watch(
   },
   { immediate: true },
 );
-
-const toggleTheme = () => {
-  isDark.value = !isDark.value;
-};
 
 const handleZoomTree = (seed) => {
   selectedSeed.value = seed;

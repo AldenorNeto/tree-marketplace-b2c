@@ -48,6 +48,13 @@ export const generateSimpleTreeCharacteristics = (seed) => {
     rootHeight: rng.range(0.8, 2.5), // Altura do cone da raiz (multiplicador do trunkThickness)
     rootBaseRadius: rng.range(2.0, 5.0), // Diâmetro da base da raiz (multiplicador do trunkThickness)
     rootTopRadius: rng.range(0.7, 1.3), // Raio do topo da raiz (multiplicador do trunkThickness)
+
+    // Novas características para raízes mais interessantes
+    rootOvalness: rng.range(0.6, 1.4), // Quão oval é a base (1.0 = circular, <1.0 = achatada, >1.0 = alongada)
+    rootTwist: rng.range(-0.3, 0.3), // Torção da raiz em radianos
+    rootLean: rng.range(0.0, 0.15), // Inclinação adicional da raiz
+    rootLeanDirection: rng.range(0, Math.PI * 2), // Direção da inclinação
+    rootBumpiness: rng.range(0.8, 1.2), // Irregularidade da superfície
   };
 };
 

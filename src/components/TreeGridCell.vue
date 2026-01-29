@@ -1,6 +1,6 @@
 <script setup>
 import * as THREE from "three";
-import { onMounted, onUnmounted, ref } from "vue";
+import { onMounted, onUnmounted, ref, watch } from "vue";
 import { createGrassGround } from "../utils/grassTexture.js";
 import {
   createTreeCamera,
@@ -18,8 +18,9 @@ const props = defineProps({
 });
 
 const canvasContainer = ref(null);
-let scene, camera, renderer, currentTree;
+let scene, camera, renderer, currentTree, currentGround;
 let animationId;
+let currentSeed;
 
 const initThreeJS = async () => {
   if (!canvasContainer.value) return;
@@ -32,7 +33,7 @@ const initThreeJS = async () => {
     canvasContainer.value.clientWidth,
     canvasContainer.value.clientHeight,
     2, // estimated tree height
-    "simple" // complexity level
+    "simple", // complexity level
   );
   camera = cam;
 
@@ -40,7 +41,7 @@ const initThreeJS = async () => {
   renderer = createTreeRenderer(
     canvasContainer.value.clientWidth,
     canvasContainer.value.clientHeight,
-    "simple" // complexity level
+    "simple", // complexity level
   );
 
   canvasContainer.value.appendChild(renderer.domElement);
@@ -49,22 +50,26 @@ const initThreeJS = async () => {
   createTreeLighting(scene, "simple");
 
   // Generate seed - use prop seed if provided, otherwise generate from cellIndex
-  let seed;
   if (props.seed) {
     // Convert seed string using unified converter
-    seed = seedToNumber(props.seed);
-    console.log("TreeGridCell usando seed da prop:", props.seed, "->", seed);
+    currentSeed = seedToNumber(props.seed);
+    console.log(
+      "TreeGridCell usando seed da prop:",
+      props.seed,
+      "->",
+      currentSeed,
+    );
   } else {
-    seed = props.cellIndex * 87654321 + (Date.now() % 1000000);
-    console.log("TreeGridCell gerando seed aleatória:", seed);
+    currentSeed = props.cellIndex * 87654321 + (Date.now() % 1000000);
+    console.log("TreeGridCell gerando seed aleatória:", currentSeed);
   }
 
   // Ground with realistic grass texture
-  const ground = createGrassGround(seed, props.isDark, 10);
-  scene.add(ground);
+  currentGround = createGrassGround(currentSeed, props.isDark, 10);
+  scene.add(currentGround);
 
   // Build tree using utility (simplified version)
-  const treeResult = await buildTree(seed, "simple");
+  const treeResult = await buildTree(currentSeed, "simple");
   currentTree = treeResult.group;
   const treeHeight = treeResult.height;
 
@@ -75,7 +80,7 @@ const initThreeJS = async () => {
     canvasContainer.value.clientWidth,
     canvasContainer.value.clientHeight,
     treeHeight,
-    "simple"
+    "simple",
   );
 
   camera.position.copy(updatedCamera.position);
@@ -83,12 +88,41 @@ const initThreeJS = async () => {
 
   // Adjust ground size based on camera distance
   const groundSize = Math.max(8, cameraDistance * 1.8);
-  ground.geometry.dispose();
-  ground.geometry = new THREE.PlaneGeometry(groundSize, groundSize);
+  currentGround.geometry.dispose();
+  currentGround.geometry = new THREE.PlaneGeometry(groundSize, groundSize);
 
   // Single render (no animation loop)
   renderer.render(scene, camera);
 };
+
+// Função para atualizar apenas o tema sem recriar tudo
+const updateTheme = () => {
+  if (!scene || !currentGround || !renderer || !camera || !currentSeed) return;
+
+  // Atualizar cor de fundo da cena
+  scene.background = new THREE.Color(props.isDark ? 0x1a1a1a : 0x87ceeb);
+
+  // Recriar textura do chão com novo tema
+  const newGrassGround = createGrassGround(currentSeed, props.isDark, 10);
+
+  // Substituir material do chão
+  if (currentGround.material.map) {
+    currentGround.material.map.dispose();
+  }
+  currentGround.material.dispose();
+  currentGround.material = newGrassGround.material;
+
+  // Re-renderizar
+  renderer.render(scene, camera);
+};
+
+// Watcher para mudanças de tema
+watch(
+  () => props.isDark,
+  () => {
+    updateTheme();
+  },
+);
 
 const handleResize = () => {
   if (!canvasContainer.value || !camera || !renderer) return;
@@ -98,7 +132,7 @@ const handleResize = () => {
   camera.updateProjectionMatrix();
   renderer.setSize(
     canvasContainer.value.clientWidth,
-    canvasContainer.value.clientHeight
+    canvasContainer.value.clientHeight,
   );
   renderer.render(scene, camera);
 };

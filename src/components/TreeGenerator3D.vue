@@ -85,10 +85,22 @@ const generateTreeCharacteristics = (seed) => {
     asymmetryFactor: rng.range(0.0, 0.4), // How asymmetric the tree is
     naturalVariation: rng.range(0.1, 0.5), // Random variation in all parameters
 
+    // Novos parâmetros para controle de continuidade
+    continuityRatio: rng.range(0.5, 0.8), // Proporção de galhos de continuidade vs galhos de nó
+    continuityAngleLimit: rng.range(25, 50), // Ângulo máximo para galhos de continuidade (em graus)
+    continuityStrength: rng.range(0.8, 0.95), // Força da continuidade (0-1)
+
     // Root characteristics (new parameters)
     rootHeight: rng.range(0.8, 2.5), // Altura do cone da raiz (multiplicador do trunkThickness)
     rootBaseRadius: rng.range(2.0, 5.0), // Diâmetro da base da raiz (multiplicador do trunkThickness)
     rootTopRadius: rng.range(0.7, 1.3), // Raio do topo da raiz (multiplicador do trunkThickness)
+
+    // Novas características para raízes mais interessantes
+    rootOvalness: rng.range(0.6, 1.4), // Quão oval é a base (1.0 = circular, <1.0 = achatada, >1.0 = alongada)
+    rootTwist: rng.range(-0.3, 0.3), // Torção da raiz em radianos
+    rootLean: rng.range(0.0, 0.15), // Inclinação adicional da raiz
+    rootLeanDirection: rng.range(0, Math.PI * 2), // Direção da inclinação
+    rootBumpiness: rng.range(0.8, 1.2), // Irregularidade da superfície
   };
 
   return characteristics;
@@ -212,6 +224,7 @@ const buildBranchesLive = async (
     parentUp: new THREE.Vector3(0, 1, 0),
     branchRng: new SeededRandom(rng.next()),
     asymmetryOffset: 0,
+    parentDirection: null, // Tronco não tem direção pai
   });
 
   // Process branches with limit
@@ -322,6 +335,7 @@ const processBranchLive = async (
     parentUp,
     branchRng,
     asymmetryOffset,
+    parentDirection,
   } = branchData;
 
   if (depth <= 0 || length < 0.05) {
@@ -391,46 +405,100 @@ const processBranchLive = async (
   const baseAngle = characteristics.branchingAngle;
 
   for (let i = 0; i < numBranches; i++) {
-    // Apply asymmetry factor
-    const asymmetryInfluence =
-      Math.sin(asymmetryOffset + i) * characteristics.asymmetryFactor;
+    // Determinar se este galho será de continuidade ou de nó
+    const isContinuationBranch =
+      depth < characteristics.maxDepth &&
+      branchRng.random() < characteristics.continuityRatio;
 
-    // Independent angle calculation
-    const angleVariation = characteristics.branchingVariation;
-    const horizontalAngle =
-      ((branchRng.range(0, 360) + asymmetryInfluence * 90) * Math.PI) / 180;
-    let verticalAngle =
-      (baseAngle *
-        branchRng.range(1 / angleVariation, angleVariation) *
-        Math.PI) /
-      180;
+    let newDirection;
 
-    // Apply upward bias
-    verticalAngle += (characteristics.upwardBias * Math.PI) / 6;
+    if (isContinuationBranch) {
+      // GALHO DE CONTINUIDADE - curva suave
+      const continuityAngleRad =
+        (characteristics.continuityAngleLimit * Math.PI) / 180;
 
-    // Calculate new direction in 3D space
-    let newDirection = direction.clone();
+      // Usar a direção atual como base
+      let baseDirection = direction.clone().normalize();
 
-    // Apply vertical rotation (branching angle)
-    const axis1 = new THREE.Vector3()
-      .crossVectors(direction, parentUp)
-      .normalize();
-    if (axis1.length() > 0) {
-      newDirection.applyAxisAngle(axis1, verticalAngle);
+      // Aplicar continuidade forte
+      const continuityFactor = characteristics.continuityStrength;
+      baseDirection = new THREE.Vector3(0, 1, 0).lerp(
+        baseDirection,
+        continuityFactor,
+      );
+      baseDirection.normalize();
+
+      // Pequena variação angular para curva suave
+      const smallAngleVariation = branchRng.range(
+        -continuityAngleRad,
+        continuityAngleRad,
+      );
+      const smallVerticalVariation = branchRng.range(
+        -continuityAngleRad * 0.5,
+        continuityAngleRad * 0.5,
+      );
+
+      newDirection = baseDirection.clone();
+
+      // Aplicar pequenas rotações para criar curva suave
+      const horizontalAxis = new THREE.Vector3(1, 0, 0);
+      const verticalAxis = new THREE.Vector3(0, 0, 1);
+
+      newDirection.applyAxisAngle(horizontalAxis, smallVerticalVariation);
+      newDirection.applyAxisAngle(verticalAxis, smallAngleVariation);
+
+      // Pequena variação natural
+      const smallVariation = characteristics.naturalVariation * 0.3;
+      newDirection.x += branchRng.range(-smallVariation, smallVariation);
+      newDirection.y += branchRng.range(
+        -smallVariation * 0.1,
+        smallVariation * 0.1,
+      );
+      newDirection.z += branchRng.range(-smallVariation, smallVariation);
+      newDirection.normalize();
+    } else {
+      // GALHO DE NÓ - nova direção dramática
+      // Apply asymmetry factor
+      const asymmetryInfluence =
+        Math.sin(asymmetryOffset + i) * characteristics.asymmetryFactor;
+
+      // Independent angle calculation
+      const angleVariation = characteristics.branchingVariation;
+      const horizontalAngle =
+        ((branchRng.range(0, 360) + asymmetryInfluence * 90) * Math.PI) / 180;
+      let verticalAngle =
+        (baseAngle *
+          branchRng.range(1 / angleVariation, angleVariation) *
+          Math.PI) /
+        180;
+
+      // Apply upward bias
+      verticalAngle += (characteristics.upwardBias * Math.PI) / 6;
+
+      // Calculate new direction in 3D space
+      newDirection = direction.clone();
+
+      // Apply vertical rotation (branching angle)
+      const axis1 = new THREE.Vector3()
+        .crossVectors(direction, parentUp)
+        .normalize();
+      if (axis1.length() > 0) {
+        newDirection.applyAxisAngle(axis1, verticalAngle);
+      }
+
+      // Apply horizontal rotation with spread factor
+      newDirection.applyAxisAngle(
+        direction,
+        horizontalAngle * characteristics.horizontalSpread,
+      );
+
+      // Add natural variation
+      const variation = characteristics.naturalVariation;
+      newDirection.x += branchRng.range(-variation, variation);
+      newDirection.y += branchRng.range(-variation * 0.5, variation * 0.5);
+      newDirection.z += branchRng.range(-variation, variation);
+      newDirection.normalize();
     }
-
-    // Apply horizontal rotation with spread factor
-    newDirection.applyAxisAngle(
-      direction,
-      horizontalAngle * characteristics.horizontalSpread,
-    );
-
-    // Add natural variation
-    const variation = characteristics.naturalVariation;
-    newDirection.x += branchRng.range(-variation, variation);
-    newDirection.y += branchRng.range(-variation * 0.5, variation * 0.5);
-    newDirection.z += branchRng.range(-variation, variation);
-    newDirection.normalize();
 
     // Apply length and radius reduction with variation
     const lengthVariation = branchRng.range(0.8, 1.2);
@@ -446,6 +514,7 @@ const processBranchLive = async (
       parentUp: parentUp.clone(),
       branchRng: new SeededRandom(branchRng.next()),
       asymmetryOffset: asymmetryOffset + i * 0.5,
+      parentDirection: direction.clone(), // Adicionar direção do pai para continuidade
     });
   }
 };

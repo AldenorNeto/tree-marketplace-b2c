@@ -66,20 +66,38 @@ export const createTreeRoots = (
 ) => {
   const rng = new SeededRandom(seed + 54321);
 
-  const rootHeight = trunkThickness * rng.range(1.5, 3.0);
-  const rootTopRadius = trunkThickness * rng.range(0.8, 1.2);
-  const rootBottomRadius = trunkThickness * rng.range(2.0, 4.0);
+  // Características das raízes baseadas na seed
+  const characteristics = {
+    rootHeight: rng.range(0.8, 2.5),
+    rootTopRadius: rng.range(0.7, 1.3),
+    rootBaseRadius: rng.range(2.0, 5.0),
+    rootOvalness: rng.range(0.6, 1.4),
+    rootTwist: rng.range(-0.3, 0.3),
+    rootLean: rng.range(0.0, 0.15),
+    rootLeanDirection: rng.range(0, Math.PI * 2),
+    rootBumpiness: rng.range(0.8, 1.2),
+  };
 
-  const rootGeometry = new THREE.CylinderGeometry(
+  const rootHeight = trunkThickness * characteristics.rootHeight;
+  const rootTopRadius = trunkThickness * characteristics.rootTopRadius;
+  const rootBottomRadius = trunkThickness * characteristics.rootBaseRadius;
+
+  // Criar geometria personalizada para raízes ovais/irregulares
+  const rootGeometry = createOvalRootGeometry(
     rootTopRadius,
     rootBottomRadius,
     rootHeight,
-    8,
+    characteristics,
   );
 
   const rootMesh = new THREE.Mesh(rootGeometry, trunkMaterial);
-  rootMesh.position.set(0, -rootHeight * 0.4, 0);
 
+  // Posicionar com altura variável
+  const baseHeight = rootHeight * 0.1;
+  const heightVariation = characteristics.rootHeight * 0.05;
+  rootMesh.position.set(0, baseHeight + heightVariation, 0);
+
+  // Aplicar inclinações e torções
   const trunkLean = Math.sqrt(
     trunkDirection.x * trunkDirection.x + trunkDirection.z * trunkDirection.z,
   );
@@ -88,7 +106,75 @@ export const createTreeRoots = (
     rootMesh.rotation.z = trunkDirection.z * 0.2;
   }
 
+  // Inclinação adicional baseada na seed
+  if (characteristics.rootLean > 0.02) {
+    const leanX =
+      Math.cos(characteristics.rootLeanDirection) * characteristics.rootLean;
+    const leanZ =
+      Math.sin(characteristics.rootLeanDirection) * characteristics.rootLean;
+    rootMesh.rotation.x += leanX;
+    rootMesh.rotation.z += leanZ;
+  }
+
+  // Torção
+  if (Math.abs(characteristics.rootTwist) > 0.05) {
+    rootMesh.rotation.y = characteristics.rootTwist;
+  }
+
   return rootMesh;
+};
+
+// Criar geometria oval/irregular para as raízes
+const createOvalRootGeometry = (
+  topRadius,
+  bottomRadius,
+  height,
+  characteristics,
+) => {
+  const radialSegments = 12;
+  const heightSegments = 4;
+
+  const geometry = new THREE.CylinderGeometry(
+    topRadius,
+    bottomRadius,
+    height,
+    radialSegments,
+    heightSegments,
+  );
+
+  // Modificar vértices para criar formato oval e irregular
+  const positions = geometry.attributes.position;
+  const vertex = new THREE.Vector3();
+
+  for (let i = 0; i < positions.count; i++) {
+    vertex.fromBufferAttribute(positions, i);
+
+    const heightRatio = (vertex.y + height / 2) / height;
+    const currentRadius = topRadius + (bottomRadius - topRadius) * heightRatio;
+
+    if (currentRadius > 0) {
+      const angle = Math.atan2(vertex.z, vertex.x);
+      const distance = Math.sqrt(vertex.x * vertex.x + vertex.z * vertex.z);
+
+      if (distance > 0) {
+        const ovalFactorX = 1.0;
+        const ovalFactorZ = characteristics.rootOvalness;
+        const irregularity =
+          0.9 +
+          0.2 * Math.sin(angle * 3) * (characteristics.rootBumpiness - 1.0);
+
+        const newDistance =
+          (distance / currentRadius) * currentRadius * irregularity;
+        vertex.x = Math.cos(angle) * newDistance * ovalFactorX;
+        vertex.z = Math.sin(angle) * newDistance * ovalFactorZ;
+      }
+    }
+
+    positions.setXYZ(i, vertex.x, vertex.y, vertex.z);
+  }
+
+  geometry.computeVertexNormals();
+  return geometry;
 };
 
 // ============================================================================
@@ -132,6 +218,11 @@ export const generateTreeCharacteristics = (seed, complexity = "full") => {
       branchOpenness: rng.range(0.1, 8.0),
       asymmetryFactor: rng.range(0.0, 0.5),
       naturalVariation: rng.range(0.05, 0.4),
+
+      // Novos parâmetros para controle de continuidade
+      continuityRatio: rng.range(0.3, 0.8), // Proporção de galhos de continuidade vs galhos de nó
+      continuityAngleLimit: rng.range(15, 45), // Ângulo máximo para galhos de continuidade (em graus)
+      continuityStrength: rng.range(0.6, 0.9), // Força da continuidade (0-1)
     };
   }
 
@@ -171,6 +262,11 @@ export const generateTreeCharacteristics = (seed, complexity = "full") => {
 
       asymmetryFactor: rng.range(0.0, 0.45),
       naturalVariation: rng.range(0.08, 0.45),
+
+      // Novos parâmetros para controle de continuidade
+      continuityRatio: rng.range(0.4, 0.7), // Proporção de galhos de continuidade vs galhos de nó
+      continuityAngleLimit: rng.range(20, 40), // Ângulo máximo para galhos de continuidade (em graus)
+      continuityStrength: rng.range(0.7, 0.9), // Força da continuidade (0-1)
     };
   }
 
@@ -209,6 +305,11 @@ export const generateTreeCharacteristics = (seed, complexity = "full") => {
 
     asymmetryFactor: rng.range(0.0, 0.4),
     naturalVariation: rng.range(0.1, 0.5),
+
+    // Novos parâmetros para controle de continuidade
+    continuityRatio: rng.range(0.5, 0.8), // Proporção de galhos de continuidade vs galhos de nó
+    continuityAngleLimit: rng.range(25, 50), // Ângulo máximo para galhos de continuidade (em graus)
+    continuityStrength: rng.range(0.8, 0.95), // Força da continuidade (0-1)
   };
 };
 
@@ -334,66 +435,113 @@ export const buildTree = async (
     for (let i = 0; i < numBranches; i++) {
       if (branchCount >= maxBranches) break;
 
-      const baseAngleStep = 360 / numBranches;
-      const baseAngle = i * baseAngleStep;
-      const angleVariation = branchRng.range(
-        -baseAngleStep * 0.2,
-        baseAngleStep * 0.2,
-      );
-      const asymmetryInfluence =
-        characteristics.asymmetryFactor * branchRng.range(-20, 20);
+      // Determinar se este galho será de continuidade ou de nó
+      const isContinuationBranch =
+        parentDirection && branchRng.random() < characteristics.continuityRatio;
 
-      const depthRatio = depth / characteristics.maxDepth;
-      const depthBasedUpwardBias = depthRatio * 0.2;
+      let newDirection;
 
-      const horizontalAngle =
-        ((baseAngle + angleVariation + asymmetryInfluence) * Math.PI) / 180;
+      if (isContinuationBranch) {
+        // GALHO DE CONTINUIDADE - curva suave
+        const continuityAngleRad =
+          (characteristics.continuityAngleLimit * Math.PI) / 180;
 
-      let verticalAngle =
-        (characteristics.branchingAngle * branchRng.range(0.3, 1.5) * Math.PI) /
-        180;
-      verticalAngle += (characteristics.upwardBias * Math.PI) / 12;
-      verticalAngle += (depthBasedUpwardBias * Math.PI) / 10;
+        // Usar a direção do pai como base
+        let baseDirection = parentDirection.clone().normalize();
 
-      let baseDirection = new THREE.Vector3(0, 1, 0);
-
-      if (parentDirection && depth < characteristics.maxDepth) {
-        const continuityFactor = Math.min(0.8, depthRatio * 1.0);
-        baseDirection = baseDirection.lerp(
-          parentDirection.clone().normalize(),
+        // Aplicar continuidade forte
+        const continuityFactor = characteristics.continuityStrength;
+        baseDirection = new THREE.Vector3(0, 1, 0).lerp(
+          baseDirection,
           continuityFactor,
         );
         baseDirection.normalize();
+
+        // Pequena variação angular para curva suave
+        const smallAngleVariation = branchRng.range(
+          -continuityAngleRad,
+          continuityAngleRad,
+        );
+        const smallVerticalVariation = branchRng.range(
+          -continuityAngleRad * 0.5,
+          continuityAngleRad * 0.5,
+        );
+
+        newDirection = baseDirection.clone();
+
+        // Aplicar pequenas rotações para criar curva suave
+        const horizontalAxis = new THREE.Vector3(1, 0, 0);
+        const verticalAxis = new THREE.Vector3(0, 0, 1);
+
+        newDirection.applyAxisAngle(horizontalAxis, smallVerticalVariation);
+        newDirection.applyAxisAngle(verticalAxis, smallAngleVariation);
+
+        // Pequena variação natural
+        const smallVariation = characteristics.naturalVariation * 0.3;
+        newDirection.x += branchRng.range(-smallVariation, smallVariation);
+        newDirection.y += branchRng.range(
+          -smallVariation * 0.1,
+          smallVariation * 0.1,
+        );
+        newDirection.z += branchRng.range(-smallVariation, smallVariation);
+        newDirection.normalize();
+      } else {
+        // GALHO DE NÓ - nova direção dramática
+        const baseAngleStep = 360 / numBranches;
+        const baseAngle = i * baseAngleStep;
+        const angleVariation = branchRng.range(
+          -baseAngleStep * 0.2,
+          baseAngleStep * 0.2,
+        );
+        const asymmetryInfluence =
+          characteristics.asymmetryFactor * branchRng.range(-20, 20);
+
+        const depthRatio = depth / characteristics.maxDepth;
+        const depthBasedUpwardBias = depthRatio * 0.2;
+
+        const horizontalAngle =
+          ((baseAngle + angleVariation + asymmetryInfluence) * Math.PI) / 180;
+
+        let verticalAngle =
+          (characteristics.branchingAngle *
+            branchRng.range(0.3, 1.5) *
+            Math.PI) /
+          180;
+        verticalAngle += (characteristics.upwardBias * Math.PI) / 12;
+        verticalAngle += (depthBasedUpwardBias * Math.PI) / 10;
+
+        let baseDirection = new THREE.Vector3(0, 1, 0);
+
+        newDirection = baseDirection.clone();
+        newDirection.applyAxisAngle(baseDirection, horizontalAngle);
+
+        const horizontalAxis = new THREE.Vector3()
+          .crossVectors(newDirection, baseDirection)
+          .normalize();
+        if (horizontalAxis.length() > 0) {
+          newDirection.applyAxisAngle(horizontalAxis, verticalAngle);
+        }
+
+        if (characteristics.branchOpenness > 4.0) {
+          const roundnessBoost =
+            characteristics.branchOpenness > 5.0 ? 1.5 : 1.0;
+          const additionalSpread =
+            branchRng.range(-Math.PI / 8, Math.PI / 8) * roundnessBoost;
+          const randomAxis = new THREE.Vector3(
+            branchRng.range(-1, 1),
+            branchRng.range(-0.2, 0.2),
+            branchRng.range(-1, 1),
+          ).normalize();
+          newDirection.applyAxisAngle(randomAxis, additionalSpread);
+        }
+
+        const variation =
+          characteristics.naturalVariation * (0.5 + depthRatio * 0.5);
+        newDirection.x += branchRng.range(-variation, variation);
+        newDirection.y += branchRng.range(-variation * 0.2, variation * 0.2);
+        newDirection.z += branchRng.range(-variation, variation);
+        newDirection.normalize();
       }
-
-      let newDirection = baseDirection.clone();
-      newDirection.applyAxisAngle(baseDirection, horizontalAngle);
-
-      const horizontalAxis = new THREE.Vector3()
-        .crossVectors(newDirection, baseDirection)
-        .normalize();
-      if (horizontalAxis.length() > 0) {
-        newDirection.applyAxisAngle(horizontalAxis, verticalAngle);
-      }
-
-      if (characteristics.branchOpenness > 4.0) {
-        const roundnessBoost = characteristics.branchOpenness > 5.0 ? 1.5 : 1.0;
-        const additionalSpread =
-          branchRng.range(-Math.PI / 8, Math.PI / 8) * roundnessBoost;
-        const randomAxis = new THREE.Vector3(
-          branchRng.range(-1, 1),
-          branchRng.range(-0.2, 0.2),
-          branchRng.range(-1, 1),
-        ).normalize();
-        newDirection.applyAxisAngle(randomAxis, additionalSpread);
-      }
-
-      const variation =
-        characteristics.naturalVariation * (0.5 + depthRatio * 0.5);
-      newDirection.x += branchRng.range(-variation, variation);
-      newDirection.y += branchRng.range(-variation * 0.2, variation * 0.2);
-      newDirection.z += branchRng.range(-variation, variation);
-      newDirection.normalize();
 
       await buildBranch(
         endPos.clone(),

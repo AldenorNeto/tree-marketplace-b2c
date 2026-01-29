@@ -1,5 +1,5 @@
 import { computed, ref } from "vue";
-import { isValidSeed as validateSeed } from "../utils/seed.js";
+import { isValidSeed as validateSeed } from "../utils/seedConverter.js";
 
 export function useSeeds() {
   const seedInput = ref("");

@@ -267,8 +267,16 @@ const buildTree = async (seed, complexity = "simple", onProgress = null) => {
           : characteristics.leafClusters;
 
       for (let k = 0; k < clusterCount; k++) {
-        const clusterLeaf = leaf.clone();
+        // Criar nova geometria e material para cada folha do cluster
+        const clusterLeafGeometry = createLeafGeometry(
+          finalSize,
+          leafData.shape,
+          complexity,
+        );
+        const clusterLeaf = new THREE.Mesh(clusterLeafGeometry, leafMaterial);
+
         const clusterVariation = finalSize * 0.3;
+        clusterLeaf.position.copy(leafData.position);
         clusterLeaf.position.add(
           new THREE.Vector3(
             leafData.rng.range(-clusterVariation, clusterVariation),
@@ -281,6 +289,11 @@ const buildTree = async (seed, complexity = "simple", onProgress = null) => {
         clusterLeaf.rotation.x = leafData.rng.range(0, Math.PI * 2);
         clusterLeaf.rotation.y = leafData.rng.range(0, Math.PI * 2);
         clusterLeaf.rotation.z = leafData.rng.range(0, Math.PI * 2);
+
+        if (complexity === "full") {
+          clusterLeaf.castShadow = true;
+          clusterLeaf.receiveShadow = true;
+        }
 
         group.add(clusterLeaf);
       }

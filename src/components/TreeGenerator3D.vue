@@ -2,6 +2,7 @@
 import * as THREE from "three";
 import { onMounted, onUnmounted, ref, watch } from "vue";
 import { createGrassGround } from "../utils/grassTexture.js";
+import { createLeafGeometry } from "../utils/leafGeometry.js";
 import { seedToNumber } from "../utils/seedConverter.js";
 import { SeededRandom } from "../utils/seededRandom.js";
 import { hslToRgb } from "../utils/treeCharacteristics.js";
@@ -104,30 +105,6 @@ const generateTreeCharacteristics = (seed) => {
   };
 
   return characteristics;
-};
-
-// Create different leaf shapes
-const createLeafGeometry = (size, shape) => {
-  switch (shape) {
-    case 0: // Sphere (default) - larger
-      return new THREE.SphereGeometry(size, 8, 6);
-
-    case 1: // Elongated (ellipsoid) - larger
-      const elongatedGeometry = new THREE.SphereGeometry(size, 8, 6);
-      elongatedGeometry.scale(0.8, 2.0, 0.8);
-      return elongatedGeometry;
-
-    case 2: // Pointed (cone-like) - larger
-      return new THREE.ConeGeometry(size * 1.2, size * 2.5, 8);
-
-    case 3: // Flat (disc-like) - larger
-      const flatGeometry = new THREE.SphereGeometry(size, 8, 6);
-      flatGeometry.scale(1.8, 0.4, 1.8);
-      return flatGeometry;
-
-    default:
-      return new THREE.SphereGeometry(size, 8, 6);
-  }
 };
 
 // Build tree directly in scene with live visual feedback and branch limit
@@ -546,7 +523,11 @@ const addLeavesLive = async (
         1.5; // Make leaves much larger
 
       // Create main leaf with specific shape
-      const leafGeometry = createLeafGeometry(finalSize, leafData.shape);
+      const leafGeometry = createLeafGeometry(
+        finalSize,
+        leafData.shape,
+        "full",
+      );
       const leaf = new THREE.Mesh(leafGeometry, leafMaterial);
       leaf.position.copy(leafData.position);
 
@@ -563,7 +544,15 @@ const addLeavesLive = async (
 
       // Add leaf clusters - much closer to the main leaf and attached to branch
       for (let k = 0; k < leafData.clusters; k++) {
-        const clusterLeaf = leaf.clone();
+        // Criar nova geometria para cada folha do cluster
+        const clusterLeafGeometry = createLeafGeometry(
+          finalSize,
+          leafData.shape,
+          "full",
+        );
+        const clusterLeaf = new THREE.Mesh(clusterLeafGeometry, leafMaterial);
+
+        clusterLeaf.position.copy(leafData.position);
         const clusterVariation = finalSize * 0.1; // Much smaller cluster spread - almost attached
         clusterLeaf.position.add(
           new THREE.Vector3(
@@ -578,6 +567,9 @@ const addLeavesLive = async (
         clusterLeaf.rotation.x = leafData.rng.range(0, Math.PI * 2);
         clusterLeaf.rotation.y = leafData.rng.range(0, Math.PI * 2);
         clusterLeaf.rotation.z = leafData.rng.range(0, Math.PI * 2);
+
+        clusterLeaf.castShadow = true;
+        clusterLeaf.receiveShadow = true;
 
         // Add to scene immediately
         group.add(clusterLeaf);

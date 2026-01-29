@@ -10,9 +10,14 @@
     <section class="products">
       <div class="product-grid">
         <!-- Árvores normais (8 primeiras) -->
-        <div v-for="(tree, index) in trees" :key="index" class="product-card">
+        <div
+          v-for="(tree, index) in trees"
+          :key="`tree-${tree.seed}-${index}`"
+          class="product-card"
+        >
           <div class="tree-canvas-preview">
             <TreeGridCell
+              :key="`cell-${tree.seed}`"
               :isDark="isDark"
               :seed="tree.seed"
               :shouldFreeze="true"

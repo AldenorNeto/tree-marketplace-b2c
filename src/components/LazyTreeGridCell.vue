@@ -1,13 +1,23 @@
 <template>
   <div ref="container" class="lazy-tree-container">
-    <div v-if="!isVisible" class="tree-placeholder">
+    <!-- Mostrar imagem do cache se disponível -->
+    <img
+      v-if="treeImage"
+      :src="treeImage"
+      alt="Cached Tree"
+      class="cached-tree-image"
+    />
+    <!-- Placeholder de loading -->
+    <div v-else-if="!isVisible" class="tree-placeholder">
       <div class="loading-spinner"></div>
     </div>
+    <!-- TreeGridCell para gerar nova árvore -->
     <TreeGridCell
       v-else-if="isVisible && shouldRender"
       :isDark="isDark"
       :seed="seed"
       :cellIndex="cellIndex"
+      @tree-frozen="onTreeFrozen"
     />
   </div>
 </template>
@@ -25,10 +35,31 @@ const props = defineProps({
 const container = ref(null);
 const isVisible = ref(false);
 const shouldRender = ref(false);
+const treeImage = ref(null); // Cache da imagem da árvore
 
 let observer = null;
 
+// Cache de imagens por seed para evitar regeneração
+const imageCache = new Map();
+
+// Função chamada quando TreeGridCell congela a árvore
+const onTreeFrozen = (imageDataUrl) => {
+  const cacheKey = `${props.seed}-${props.isDark}`;
+  imageCache.set(cacheKey, imageDataUrl);
+  treeImage.value = imageDataUrl;
+  shouldRender.value = false; // Não precisa mais do TreeGridCell
+};
+
 onMounted(() => {
+  // Verificar se já temos a imagem no cache
+  const cacheKey = `${props.seed}-${props.isDark}`;
+  if (imageCache.has(cacheKey)) {
+    treeImage.value = imageCache.get(cacheKey);
+    isVisible.value = true;
+    shouldRender.value = false; // Não precisa renderizar TreeGridCell
+    return;
+  }
+
   // Intersection Observer para lazy loading
   observer = new IntersectionObserver(
     (entries) => {
@@ -62,6 +93,13 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   position: relative;
+}
+
+.cached-tree-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
 }
 
 .tree-placeholder {

@@ -18,6 +18,12 @@ const routes = [
     component: App,
     meta: { page: "Shop" },
   },
+  {
+    path: "/registro",
+    name: "Registro",
+    component: App,
+    meta: { page: "Registro" },
+  },
 ];
 
 const router = createRouter({

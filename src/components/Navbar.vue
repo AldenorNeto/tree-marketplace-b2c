@@ -15,6 +15,13 @@
       >
         Visão Dinâmica
       </button>
+      <button
+        @click="setPage('Registro')"
+        :class="{ active: currentPage === 'Registro' }"
+        class="nav-button"
+      >
+        Registro
+      </button>
     </nav>
 
     <button @click="toggleTheme" class="theme-toggle">

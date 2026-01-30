@@ -11,6 +11,8 @@ import TreeGridCell from "./TreeGridCell.vue";
 
 const props = defineProps({
   isDark: Boolean,
+  noGrass: Boolean, // Nova prop para desabilitar grama
+  fixedCamera: Boolean, // Nova prop para câmera fixa
 });
 
 const canvasContainer = ref(null);
@@ -20,7 +22,11 @@ const isGenerating = ref(false);
 const generationProgress = ref(0);
 const currentPhase = ref("");
 const useSimpleMode = ref(false); // Flag para usar TreeGridCell
-let scene, camera, renderer, currentTree;
+let scene,
+  camera,
+  renderer,
+  currentTree,
+  forestTrees = [];
 let animationId,
   generationCancelled = false;
 
@@ -107,6 +113,254 @@ const generateTreeCharacteristics = (seed) => {
   return characteristics;
 };
 
+// Function to auto-fit camera to tree when in fixed camera mode
+const autoFitCameraToTree = (tree) => {
+  if (!props.fixedCamera || !tree || !camera) return;
+
+  // Calculate bounding box of the tree
+  const box = new THREE.Box3().setFromObject(tree);
+  const center = box.getCenter(new THREE.Vector3());
+  const size = box.getSize(new THREE.Vector3());
+
+  // Get the maximum dimension to determine camera distance
+  const maxDim = Math.max(size.x, size.y, size.z);
+
+  // Calculate camera distance based on field of view and tree size
+  const fov = camera.fov * (Math.PI / 180); // Convert to radians
+  let distance = Math.abs(maxDim / Math.sin(fov / 2)) * 1.1; // Reduzido para 1.1 (apenas 10% padding)
+
+  // Ensure minimum distance for very small trees (reduzido de 3 para 2)
+  distance = Math.max(distance, 2);
+
+  // Ensure maximum distance for very large trees (reduzido de 15 para 10)
+  distance = Math.min(distance, 10);
+
+  // Position camera at a nice angle to show the tree well
+  const angle = Math.PI / 6; // 30 degrees
+  const cameraHeight = center.y + size.y * 0.2; // Slightly above center
+
+  camera.position.set(
+    center.x + Math.cos(angle) * distance,
+    cameraHeight,
+    center.z + Math.sin(angle) * distance,
+  );
+
+  camera.lookAt(center);
+
+  console.log("Auto-fitted camera to tree:", {
+    treeSize: size,
+    treeCenter: center,
+    maxDimension: maxDim,
+    cameraDistance: distance,
+    cameraPosition: camera.position,
+  });
+};
+
+// Function to auto-fit camera to entire forest
+const autoFitCameraToForest = () => {
+  if (!props.fixedCamera || !camera || forestTrees.length === 0) return;
+
+  // Calculate bounding box of the entire forest
+  const forestBox = new THREE.Box3();
+
+  forestTrees.forEach((tree) => {
+    const treeBox = new THREE.Box3().setFromObject(tree);
+    forestBox.union(treeBox);
+  });
+
+  const center = forestBox.getCenter(new THREE.Vector3());
+  const size = forestBox.getSize(new THREE.Vector3());
+
+  // Get the maximum dimension to determine camera distance
+  const maxDim = Math.max(size.x, size.y, size.z);
+
+  // Calculate camera distance - need more distance for larger forest
+  const fov = camera.fov * (Math.PI / 180); // Convert to radians
+  let distance = Math.abs(maxDim / Math.sin(fov / 2)) * 2.0; // Increased multiplier for 30 trees
+
+  // Ensure good distance for larger forest viewing
+  distance = Math.max(distance, 18); // Increased minimum distance
+  distance = Math.min(distance, 35); // Increased maximum distance
+
+  // Position camera at a nice elevated angle to show the forest well
+  const angle = Math.PI / 4; // 45 degrees for better forest view
+  const cameraHeight = center.y + size.y * 0.5; // Higher up to see over trees
+
+  camera.position.set(
+    center.x + Math.cos(angle) * distance,
+    cameraHeight,
+    center.z + Math.sin(angle) * distance,
+  );
+
+  camera.lookAt(center);
+
+  console.log("Auto-fitted camera to forest:", {
+    forestSize: size,
+    forestCenter: center,
+    maxDimension: maxDim,
+    cameraDistance: distance,
+    cameraPosition: camera.position,
+    totalTrees: forestTrees.length,
+  });
+};
+
+// Function to capture tree as PNG with transparent background and download
+const captureAndDownloadTree = () => {
+  if (!renderer || !scene || !camera || !currentTree) {
+    console.error(
+      "Cannot capture tree: missing renderer, scene, camera or tree",
+    );
+    return;
+  }
+
+  // Store original background
+  const originalBackground = scene.background;
+
+  // Set transparent background
+  scene.background = null;
+  renderer.setClearColor(0x000000, 0); // Transparent
+
+  // Render the scene
+  renderer.render(scene, camera);
+
+  // Capture as image
+  const canvas = renderer.domElement;
+  const imageDataUrl = canvas.toDataURL("image/png");
+
+  // Restore original background
+  scene.background = originalBackground;
+  renderer.setClearColor(props.isDark ? 0x1a1a1a : 0xf0f8f0, 1);
+  renderer.render(scene, camera); // Re-render with background
+
+  // Create download link
+  const link = document.createElement("a");
+  const treeCount =
+    forestTrees.length > 1 ? `forest-${forestTrees.length}-trees` : "tree";
+  link.download = `${treeCount}-${currentSeed.value || "generated"}.png`;
+  link.href = imageDataUrl;
+
+  // Trigger download
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  console.log("Tree image downloaded successfully");
+};
+
+// Function to generate forest of 15 trees total (14 additional trees)
+const generateForest = async (firstTreeSeed) => {
+  if (!props.fixedCamera || !scene || !currentTree) return;
+
+  const totalTrees = 30;
+  const additionalTrees = totalTrees - 1; // 29 additional trees
+
+  // Store first tree in forest array
+  forestTrees = [currentTree];
+
+  for (let i = 0; i < additionalTrees; i++) {
+    currentPhase.value = `Gerando árvore ${i + 2} de ${totalTrees}...`;
+    generationProgress.value = Math.round(((i + 1) / additionalTrees) * 100);
+
+    try {
+      // Generate a different seed for each tree
+      const treeSeed = generateSeed();
+      const characteristics = generateTreeCharacteristics(treeSeed);
+
+      const rng = new SeededRandom(seedToNumber(treeSeed));
+
+      // Create group for this tree
+      const treeGroup = new THREE.Group();
+
+      // Generate position in multiple circular layers around the first tree
+      // with some randomness to make it look natural
+      const layer = Math.floor(i / 10); // Create 3 layers of ~10 trees each
+      const angleInLayer = ((i % 10) / 10) * Math.PI * 2; // Distribute within layer
+      const baseRadius = 5 + layer * 4 + Math.random() * 3; // Layers at 5-8, 9-12, 13-16
+      const radiusVariation = (Math.random() - 0.5) * 2;
+
+      const x =
+        Math.cos(angleInLayer) * (baseRadius + radiusVariation) +
+        (Math.random() - 0.5) * 2;
+      const z =
+        Math.sin(angleInLayer) * (baseRadius + radiusVariation) +
+        (Math.random() - 0.5) * 2;
+
+      treeGroup.position.set(x, 0, z);
+
+      // Generate colors from characteristics
+      const trunkRgb = hslToRgb(
+        characteristics.trunkHue,
+        characteristics.trunkSaturation,
+        characteristics.trunkLightness,
+      );
+      const leafRgb = hslToRgb(
+        characteristics.leafHue,
+        characteristics.leafSaturation,
+        characteristics.leafLightness,
+      );
+
+      const trunkMaterial = new THREE.MeshPhongMaterial({
+        color: new THREE.Color(trunkRgb[0], trunkRgb[1], trunkRgb[2]),
+      });
+      const leafMaterial = new THREE.MeshPhongMaterial({
+        color: new THREE.Color(leafRgb[0], leafRgb[1], leafRgb[2]),
+      });
+
+      // Add roots at the base
+      const trunkDirection = new THREE.Vector3(
+        rng.range(-characteristics.trunkLean, characteristics.trunkLean),
+        1,
+        rng.range(-characteristics.trunkLean, characteristics.trunkLean),
+      ).normalize();
+
+      const rootMesh = createTreeRoots(
+        characteristics.trunkThickness,
+        trunkDirection,
+        trunkMaterial,
+        characteristics,
+      );
+      treeGroup.add(rootMesh);
+
+      // Build tree structure
+      await buildBranchesLive(
+        treeGroup,
+        characteristics,
+        rng,
+        trunkMaterial,
+        leafMaterial,
+      );
+
+      // Add tree to scene and forest array
+      scene.add(treeGroup);
+      forestTrees.push(treeGroup);
+
+      console.log(`Tree ${i + 2} generated at position:`, { x, z });
+
+      // Small delay between trees to show progress
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    } catch (error) {
+      console.error(`Error generating tree ${i + 2}:`, error);
+    }
+  }
+
+  currentPhase.value = `Mini floresta de ${totalTrees} árvores concluída!`;
+  generationProgress.value = 100;
+
+  // Now adjust camera to fit the entire forest
+  setTimeout(() => {
+    autoFitCameraToForest();
+
+    // Wait a bit more then capture and download
+    setTimeout(() => {
+      captureAndDownloadTree();
+    }, 500);
+  }, 200);
+
+  console.log(
+    `Forest generation complete! Generated ${forestTrees.length} trees total.`,
+  );
+};
+
 // Build tree directly in scene with live visual feedback and branch limit
 const buildTreeLiveAsync = async (seed) => {
   if (generationCancelled) return null;
@@ -167,6 +421,15 @@ const buildTreeLiveAsync = async (seed) => {
 
   currentPhase.value = "Concluído!";
   generationProgress.value = 100;
+
+  // Auto-fit camera to tree if in fixed camera mode
+  if (props.fixedCamera) {
+    // DON'T adjust camera yet - wait for all trees to be generated
+    // Start generating forest after first tree is complete
+    setTimeout(() => {
+      generateForest(seed);
+    }, 300);
+  }
 
   return group;
 };
@@ -612,118 +875,126 @@ const initThreeJS = () => {
 
   canvasContainer.value.appendChild(renderer.domElement);
 
-  // Manual camera controls
-  let isDragging = false;
-  let previousMousePosition = { x: 0, y: 0 };
-  let cameraDistance = 10;
-  let cameraAngleX = 0.5; // vertical angle
-  let cameraAngleY = 0; // horizontal angle
+  // Manual camera controls (only if camera is not fixed)
+  if (!props.fixedCamera) {
+    let isDragging = false;
+    let previousMousePosition = { x: 0, y: 0 };
+    let cameraDistance = 10;
+    let cameraAngleX = 0.5; // vertical angle
+    let cameraAngleY = 0; // horizontal angle
 
-  const updateCameraPosition = () => {
-    const x = Math.cos(cameraAngleY) * Math.cos(cameraAngleX) * cameraDistance;
-    const y = Math.sin(cameraAngleX) * cameraDistance;
-    const z = Math.sin(cameraAngleY) * Math.cos(cameraAngleX) * cameraDistance;
+    const updateCameraPosition = () => {
+      const x =
+        Math.cos(cameraAngleY) * Math.cos(cameraAngleX) * cameraDistance;
+      const y = Math.sin(cameraAngleX) * cameraDistance;
+      const z =
+        Math.sin(cameraAngleY) * Math.cos(cameraAngleX) * cameraDistance;
 
-    camera.position.set(x, y + 2, z);
-    camera.lookAt(0, 2, 0);
-  };
+      camera.position.set(x, y + 2, z);
+      camera.lookAt(0, 2, 0);
+    };
 
-  // Mouse controls
-  renderer.domElement.addEventListener("mousedown", (event) => {
-    isDragging = true;
-    previousMousePosition = { x: event.clientX, y: event.clientY };
-  });
-
-  renderer.domElement.addEventListener("mousemove", (event) => {
-    if (isDragging) {
-      const deltaX = event.clientX - previousMousePosition.x;
-      const deltaY = event.clientY - previousMousePosition.y;
-
-      cameraAngleY += deltaX * 0.01;
-      cameraAngleX += deltaY * 0.01;
-
-      // Limit vertical rotation
-      cameraAngleX = Math.max(
-        -Math.PI / 2 + 0.1,
-        Math.min(Math.PI / 2 - 0.1, cameraAngleX),
-      );
-
-      updateCameraPosition();
-
-      previousMousePosition = { x: event.clientX, y: event.clientY };
-    }
-  });
-
-  renderer.domElement.addEventListener("mouseup", () => {
-    isDragging = false;
-  });
-
-  // Zoom with mouse wheel
-  renderer.domElement.addEventListener("wheel", (event) => {
-    event.preventDefault();
-    cameraDistance += event.deltaY * 0.01;
-    cameraDistance = Math.max(3, Math.min(20, cameraDistance));
-    updateCameraPosition();
-  });
-
-  // Touch controls for mobile
-  let touchStartDistance = 0;
-
-  renderer.domElement.addEventListener("touchstart", (event) => {
-    if (event.touches.length === 1) {
+    // Mouse controls
+    renderer.domElement.addEventListener("mousedown", (event) => {
       isDragging = true;
-      previousMousePosition = {
-        x: event.touches[0].clientX,
-        y: event.touches[0].clientY,
-      };
-    } else if (event.touches.length === 2) {
-      const dx = event.touches[0].clientX - event.touches[1].clientX;
-      const dy = event.touches[0].clientY - event.touches[1].clientY;
-      touchStartDistance = Math.sqrt(dx * dx + dy * dy);
-    }
-  });
+      previousMousePosition = { x: event.clientX, y: event.clientY };
+    });
 
-  renderer.domElement.addEventListener("touchmove", (event) => {
-    event.preventDefault();
+    renderer.domElement.addEventListener("mousemove", (event) => {
+      if (isDragging) {
+        const deltaX = event.clientX - previousMousePosition.x;
+        const deltaY = event.clientY - previousMousePosition.y;
 
-    if (event.touches.length === 1 && isDragging) {
-      const deltaX = event.touches[0].clientX - previousMousePosition.x;
-      const deltaY = event.touches[0].clientY - previousMousePosition.y;
+        cameraAngleY += deltaX * 0.01;
+        cameraAngleX += deltaY * 0.01;
 
-      cameraAngleY += deltaX * 0.01;
-      cameraAngleX += deltaY * 0.01;
+        // Limit vertical rotation
+        cameraAngleX = Math.max(
+          -Math.PI / 2 + 0.1,
+          Math.min(Math.PI / 2 - 0.1, cameraAngleX),
+        );
 
-      cameraAngleX = Math.max(
-        -Math.PI / 2 + 0.1,
-        Math.min(Math.PI / 2 - 0.1, cameraAngleX),
-      );
+        updateCameraPosition();
 
-      updateCameraPosition();
+        previousMousePosition = { x: event.clientX, y: event.clientY };
+      }
+    });
 
-      previousMousePosition = {
-        x: event.touches[0].clientX,
-        y: event.touches[0].clientY,
-      };
-    } else if (event.touches.length === 2) {
-      const dx = event.touches[0].clientX - event.touches[1].clientX;
-      const dy = event.touches[0].clientY - event.touches[1].clientY;
-      const distance = Math.sqrt(dx * dx + dy * dy);
+    renderer.domElement.addEventListener("mouseup", () => {
+      isDragging = false;
+    });
 
-      const scale = distance / touchStartDistance;
-      cameraDistance /= scale;
+    // Zoom with mouse wheel
+    renderer.domElement.addEventListener("wheel", (event) => {
+      event.preventDefault();
+      cameraDistance += event.deltaY * 0.01;
       cameraDistance = Math.max(3, Math.min(20, cameraDistance));
       updateCameraPosition();
+    });
 
-      touchStartDistance = distance;
-    }
-  });
+    // Touch controls for mobile
+    let touchStartDistance = 0;
 
-  renderer.domElement.addEventListener("touchend", () => {
-    isDragging = false;
-  });
+    renderer.domElement.addEventListener("touchstart", (event) => {
+      if (event.touches.length === 1) {
+        isDragging = true;
+        previousMousePosition = {
+          x: event.touches[0].clientX,
+          y: event.touches[0].clientY,
+        };
+      } else if (event.touches.length === 2) {
+        const dx = event.touches[0].clientX - event.touches[1].clientX;
+        const dy = event.touches[0].clientY - event.touches[1].clientY;
+        touchStartDistance = Math.sqrt(dx * dx + dy * dy);
+      }
+    });
 
-  // Set initial camera position
-  updateCameraPosition();
+    renderer.domElement.addEventListener("touchmove", (event) => {
+      event.preventDefault();
+
+      if (event.touches.length === 1 && isDragging) {
+        const deltaX = event.touches[0].clientX - previousMousePosition.x;
+        const deltaY = event.touches[0].clientY - previousMousePosition.y;
+
+        cameraAngleY += deltaX * 0.01;
+        cameraAngleX += deltaY * 0.01;
+
+        cameraAngleX = Math.max(
+          -Math.PI / 2 + 0.1,
+          Math.min(Math.PI / 2 - 0.1, cameraAngleX),
+        );
+
+        updateCameraPosition();
+
+        previousMousePosition = {
+          x: event.touches[0].clientX,
+          y: event.touches[0].clientY,
+        };
+      } else if (event.touches.length === 2) {
+        const dx = event.touches[0].clientX - event.touches[1].clientX;
+        const dy = event.touches[0].clientY - event.touches[1].clientY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        const scale = distance / touchStartDistance;
+        cameraDistance /= scale;
+        cameraDistance = Math.max(3, Math.min(20, cameraDistance));
+        updateCameraPosition();
+
+        touchStartDistance = distance;
+      }
+    });
+
+    renderer.domElement.addEventListener("touchend", () => {
+      isDragging = false;
+    });
+
+    // Set initial camera position
+    updateCameraPosition();
+  } else {
+    // Fixed camera position
+    camera.position.set(3, 2, 3);
+    camera.lookAt(0, 1, 0);
+  }
 
   // Improved lighting
   const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
@@ -741,10 +1012,12 @@ const initThreeJS = () => {
   fillLight.position.set(-5, 5, -5);
   scene.add(fillLight);
 
-  // Ground with grass texture
-  const ground = createGrassGround(Date.now(), props.isDark, 20);
-  ground.name = "ground"; // Add name for easy reference
-  scene.add(ground);
+  // Ground with grass texture (only if not disabled)
+  if (!props.noGrass) {
+    const ground = createGrassGround(Date.now(), props.isDark, 20);
+    ground.name = "ground"; // Add name for easy reference
+    scene.add(ground);
+  }
 
   // Animation loop (no automatic rotation)
   const animate = () => {
@@ -773,7 +1046,7 @@ const generateTreeFromSeed = async (seed) => {
   currentSeed.value = seed;
 
   try {
-    // Remove existing tree
+    // Remove existing trees
     if (currentTree) {
       scene.remove(currentTree);
       // Dispose of geometries and materials for memory management
@@ -783,6 +1056,20 @@ const generateTreeFromSeed = async (seed) => {
           if (child.material) child.material.dispose();
         }
       });
+    }
+
+    // Remove second tree if it exists
+    if (forestTrees.length > 0) {
+      forestTrees.forEach((tree) => {
+        scene.remove(tree);
+        tree.traverse((child) => {
+          if (child.isMesh) {
+            if (child.geometry) child.geometry.dispose();
+            if (child.material) child.material.dispose();
+          }
+        });
+      });
+      forestTrees = [];
     }
 
     // Decide complexity based on seed length
@@ -851,10 +1138,12 @@ watch(
         oldGround.material.dispose();
       }
 
-      // Create new ground with updated theme
-      const newGround = createGrassGround(Date.now(), props.isDark, 20);
-      newGround.name = "ground";
-      scene.add(newGround);
+      // Create new ground with updated theme (only if not disabled)
+      if (!props.noGrass) {
+        const newGround = createGrassGround(Date.now(), props.isDark, 20);
+        newGround.name = "ground";
+        scene.add(newGround);
+      }
     }
   },
 );
@@ -883,6 +1172,7 @@ defineExpose({
   isGenerating: () => isGenerating.value,
   getGenerationProgress: () => generationProgress.value,
   getCurrentPhase: () => currentPhase.value,
+  captureAndDownloadTree, // Nova função exposta
 });
 </script>
 

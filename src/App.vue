@@ -5,6 +5,7 @@ import Navbar from "./components/Navbar.vue";
 import { useTheme } from "./composables/useTheme.js";
 import CreateView from "./views/CreateView.vue";
 import ShopView from "./views/ShopView.vue";
+import RegistroView from "./views/RegistroView.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -56,6 +57,12 @@ watch(currentPage, (newPage) => {
         v-if="currentPage === 'Shop'"
         :isDark="isDark"
         @zoom-tree="handleZoomTree"
+      />
+
+      <RegistroView
+        v-if="currentPage === 'Registro'"
+        :isDark="isDark"
+        :initialSeed="selectedSeed"
       />
     </main>
   </div>

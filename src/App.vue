@@ -6,6 +6,7 @@ import { useTheme } from "./composables/useTheme.js";
 import CreateView from "./views/CreateView.vue";
 import RegistroView from "./views/RegistroView.vue";
 import ShopView from "./views/ShopView.vue";
+import CenarioView from "./views/CenarioView.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -60,6 +61,12 @@ watch(currentPage, (newPage) => {
 
       <RegistroView
         v-if="currentPage === 'Registro'"
+        :isDark="isDark"
+        :initialSeed="selectedSeed"
+      />
+
+      <CenarioView
+        v-if="currentPage === 'Cenario'"
         :isDark="isDark"
         :initialSeed="selectedSeed"
       />

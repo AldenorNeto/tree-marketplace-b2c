@@ -22,6 +22,13 @@
       >
         Registro
       </button>
+      <button
+        @click="setPage('Cenario')"
+        :class="{ active: currentPage === 'Cenario' }"
+        class="nav-button"
+      >
+        Cenário
+      </button>
     </nav>
 
     <button @click="toggleTheme" class="theme-toggle">

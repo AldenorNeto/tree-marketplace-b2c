@@ -24,6 +24,12 @@ const routes = [
     component: App,
     meta: { page: "Registro" },
   },
+  {
+    path: "/cenario",
+    name: "Cenario",
+    component: App,
+    meta: { page: "Cenario" },
+  },
 ];
 
 const router = createRouter({

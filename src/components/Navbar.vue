@@ -15,20 +15,6 @@
       >
         Live View
       </button>
-      <button
-        @click="setPage(3)"
-        :class="{ active: currentPage === 'Registro' }"
-        class="nav-button"
-      >
-        Registro
-      </button>
-      <button
-        @click="setPage(4)"
-        :class="{ active: currentPage === 'Cenario' }"
-        class="nav-button"
-      >
-        Cenário
-      </button>
     </nav>
 
     <button @click="toggleTheme" class="theme-toggle">

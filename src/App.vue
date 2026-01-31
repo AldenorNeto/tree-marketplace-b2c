@@ -4,15 +4,14 @@ import { useRoute, useRouter } from "vue-router";
 import Navbar from "./components/Navbar.vue";
 import { useTheme } from "./composables/useTheme.js";
 import CreateView from "./views/CreateView.vue";
-import ShopView from "./views/ShopView.vue";
 import RegistroView from "./views/RegistroView.vue";
+import ShopView from "./views/ShopView.vue";
 
 const route = useRoute();
 const router = useRouter();
 const currentPage = ref("Create");
 const selectedSeed = ref(null);
 
-// Usa o composable de tema
 const { isDark, toggleTheme } = useTheme();
 
 watch(
@@ -72,23 +71,29 @@ watch(currentPage, (newPage) => {
 .light-theme {
   --bg-primary: #ffffff;
   --bg-secondary: #f8f9fa;
+  --bg-tertiary: #e9ecef;
   --text-primary: #2c3e50;
   --text-secondary: #6c757d;
   --card-bg: #ffffff;
   --navbar-bg: #2c3e50;
   --shadow: rgba(0, 0, 0, 0.1);
   --canvas-bg: #f0f8f0;
+  --border-color: #dee2e6;
+  --accent-color: #27ae60;
 }
 
 .dark-theme {
   --bg-primary: #1a1a1a;
   --bg-secondary: #2d2d2d;
+  --bg-tertiary: #3a3a3a;
   --text-primary: #ffffff;
   --text-secondary: #b0b0b0;
   --card-bg: #2d2d2d;
   --navbar-bg: #0f0f0f;
   --shadow: rgba(0, 0, 0, 0.3);
   --canvas-bg: #2a2a2a;
+  --border-color: #404040;
+  --accent-color: #27ae60;
 }
 </style>
 

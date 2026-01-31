@@ -3,10 +3,10 @@ import { ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Navbar from "./components/Navbar.vue";
 import { useTheme } from "./composables/useTheme.js";
+import CenarioView from "./views/CenarioView.vue";
 import CreateView from "./views/CreateView.vue";
 import RegistroView from "./views/RegistroView.vue";
 import ShopView from "./views/ShopView.vue";
-import CenarioView from "./views/CenarioView.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -113,10 +113,6 @@ watch(currentPage, (newPage) => {
 }
 
 .content {
-  padding: 0;
-}
-
-.page {
-  min-height: calc(100vh - 80px);
+  padding-top: 60px;
 }
 </style>

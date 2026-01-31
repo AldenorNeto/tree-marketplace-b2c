@@ -6,28 +6,14 @@
         :class="{ active: currentPage === 'Shop' }"
         class="nav-button"
       >
-        Explorar
+        Explore
       </button>
       <button
         @click="setPage('Create')"
         :class="{ active: currentPage === 'Create' }"
         class="nav-button"
       >
-        Visão Dinâmica
-      </button>
-      <button
-        @click="setPage('Registro')"
-        :class="{ active: currentPage === 'Registro' }"
-        class="nav-button"
-      >
-        Registro
-      </button>
-      <button
-        @click="setPage('Cenario')"
-        :class="{ active: currentPage === 'Cenario' }"
-        class="nav-button"
-      >
-        Cenário
+        Live View
       </button>
     </nav>
 
@@ -68,6 +54,11 @@ const toggleTheme = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
 }
 
 nav {

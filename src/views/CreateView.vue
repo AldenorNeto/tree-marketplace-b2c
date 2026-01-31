@@ -70,14 +70,14 @@
       <div class="tree-data-modal">
         <div class="tree-data-header">
           <div class="tree-icon">🌳</div>
-          <span class="tree-title">Dados da Árvore</span>
+          <span class="tree-title">Tree Data</span>
         </div>
         <div
           class="tree-data-content"
           v-if="treeGenerator?.getTreeCharacteristics?.()"
         >
           <div class="data-row">
-            <span class="data-label">Tronco</span>
+            <span class="data-label">Trunk</span>
             <span class="data-value"
               >{{
                 (
@@ -88,7 +88,7 @@
             >
           </div>
           <div class="data-row">
-            <span class="data-label">Altura</span>
+            <span class="data-label">Height</span>
             <span class="data-value"
               >{{
                 (
@@ -98,15 +98,15 @@
             >
           </div>
           <div class="data-row">
-            <span class="data-label">Galhos</span>
+            <span class="data-label">Branches</span>
             <span class="data-value"
               >{{
                 treeGenerator.getTreeCharacteristics().branchingFactor
-              }}-1/nó</span
+              }}-1/node</span
             >
           </div>
           <div class="data-row">
-            <span class="data-label">Ângulo</span>
+            <span class="data-label">Angle</span>
             <span class="data-value"
               >{{
                 (
@@ -116,7 +116,7 @@
             >
           </div>
           <div class="data-row">
-            <span class="data-label">Folhas</span>
+            <span class="data-label">Leaves</span>
             <span class="data-value"
               >{{
                 (
@@ -273,7 +273,7 @@ defineExpose({
 .create-page {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 80px);
+  height: calc(100vh - 60px);
 }
 
 .canvas-container {

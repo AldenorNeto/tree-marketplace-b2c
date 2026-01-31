@@ -1,15 +1,21 @@
 <template>
   <div class="shop-page">
     <section class="banner">
+      <div class="banner-overlay"></div>
       <div class="banner-content">
-        <h1>🌳 Tree Marketplace</h1>
-        <p>Encontre a árvore perfeita para seu jardim</p>
+        <h1>Generative Forest</h1>
+        <p>Unique trees, procedurally generated just for you</p>
+        <div class="banner-stats">
+          <span class="counter">{{ formattedPossibilities }}</span>
+          <span class="counter-label">possible trees for you</span>
+        </div>
+        <button class="cta-button" @click="goToCreate">Generate My Tree</button>
       </div>
     </section>
 
     <section class="products">
       <div class="product-grid">
-        <!-- Árvores normais (8 primeiras) -->
+        <!-- Normal trees (first 8) -->
         <div
           v-for="(tree, index) in trees"
           :key="`tree-${tree.seed}-${index}`"
@@ -36,7 +42,7 @@
           </div>
         </div>
 
-        <!-- Registro vazio com spinner (9º item) -->
+        <!-- Empty card with spinner (9th item) -->
         <div ref="spinnerCard" class="product-card empty-card">
           <div class="tree-canvas-preview">
             <div class="loading-spinner-container">
@@ -45,7 +51,7 @@
           </div>
           <div class="card-footer">
             <p class="seed-code empty-seed">---</p>
-            <button class="view-button disabled" title="Carregando..." disabled>
+            <button class="view-button disabled" title="Loading..." disabled>
               <Search :size="22" :stroke-width="2.5" />
             </button>
           </div>
@@ -57,7 +63,7 @@
 
 <script setup>
 import { Search } from "lucide-vue-next";
-import { onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import TreeGridCell from "../components/TreeGridCell.vue";
 import { useSeeds } from "../composables/useSeeds.js";
@@ -73,6 +79,23 @@ const { generateRandomSeed } = useSeeds();
 
 const trees = ref([]);
 const spinnerCard = ref(null);
+
+// Seeds podem ter 8-12 caracteres alfanuméricos (A-Z, 0-9 = 36 caracteres)
+// Total de combinações: 36^8 + 36^9 + 36^10 + 36^11 + 36^12
+const totalPossibilities =
+  Math.pow(36, 8) +
+  Math.pow(36, 9) +
+  Math.pow(36, 10) +
+  Math.pow(36, 11) +
+  Math.pow(36, 12);
+
+const formattedPossibilities = computed(() => {
+  return totalPossibilities.toLocaleString("pt-BR");
+});
+
+const goToCreate = () => {
+  router.push("/create");
+};
 
 let observer = null;
 
@@ -133,26 +156,73 @@ onUnmounted(() => {
 
 <style scoped>
 .shop-page {
-  min-height: calc(100vh - 80px);
+  min-height: calc(100vh - 60px);
 }
 
 .banner {
-  background: linear-gradient(135deg, #27ae60, #2ecc71);
+  background: url("../assets/banner.png");
+  background-size: cover;
+  background-position: calc(100% + 100px) center;
   color: white;
-  padding: 4rem 2rem;
-  text-align: center;
+  padding: 5rem 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.banner-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to right,
+    rgba(39, 174, 96, 0.95) 0%,
+    rgba(39, 174, 96, 0.85) 30%,
+    rgba(46, 204, 113, 0.4) 60%,
+    transparent 100%
+  );
+  z-index: 1;
+}
+
+.banner-content {
+  position: relative;
+  z-index: 2;
+  text-align: left;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .banner-content h1 {
   font-size: 3rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   color: white;
 }
 
 .banner-content p {
   font-size: 1.2rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   opacity: 0.9;
+}
+
+.banner-stats {
+  margin-bottom: 2rem;
+}
+
+.counter {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: white;
+  display: block;
+  font-family: "Courier New", monospace;
+  letter-spacing: 1px;
+}
+
+.counter-label {
+  font-size: 1rem;
+  opacity: 0.85;
+  display: block;
+  margin-top: -0.3rem;
 }
 
 .cta-button {
@@ -164,11 +234,15 @@ onUnmounted(() => {
   border-radius: 50px;
   cursor: pointer;
   font-weight: bold;
-  transition: transform 0.3s;
+  transition:
+    transform 0.3s,
+    box-shadow 0.3s;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .cta-button:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
 }
 
 .products {

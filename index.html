@@ -8,6 +8,25 @@
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Generative Forest</title>
+
+    <!-- Redirecionamento para URLs antigas -->
+    <script>
+      (function () {
+        const path = window.location.pathname;
+        const redirects = {
+          "/tree-marketplace-b2c/shop": "/?aba=1",
+          "/tree-marketplace-b2c/create": "/?aba=2",
+          "/tree-marketplace-b2c/registro": "/?aba=3",
+          "/tree-marketplace-b2c/cenario": "/?aba=4",
+        };
+
+        if (redirects[path]) {
+          window.location.replace(
+            window.location.origin + "/tree-marketplace-b2c" + redirects[path],
+          );
+        }
+      })();
+    </script>
     <script type="module" crossorigin src="/tree-marketplace-b2c/assets/index-BmvPSm1v.js"></script>
     <link rel="stylesheet" crossorigin href="/tree-marketplace-b2c/assets/index-_3JuuAil.css">
   </head>

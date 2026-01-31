@@ -150,18 +150,15 @@ const initThreeJS = async () => {
     console.log("TreeGridCell gerando seed aleatória:", currentSeed);
   }
 
-  // Ground with realistic grass texture
   currentGround = createGrassGround(currentSeed, props.isDark, 10);
   scene.add(currentGround);
 
-  // Build tree using utility (simplified version)
   const treeResult = await buildTree(currentSeed, "simple");
   currentTree = treeResult.group;
   const treeHeight = treeResult.height;
 
   scene.add(currentTree);
 
-  // Update camera position based on actual tree height
   const { camera: updatedCamera, cameraDistance } = createTreeCamera(
     canvasContainer.value.clientWidth,
     canvasContainer.value.clientHeight,
@@ -172,26 +169,20 @@ const initThreeJS = async () => {
   camera.position.copy(updatedCamera.position);
   camera.lookAt(0, treeHeight * 0.3, 0);
 
-  // Adjust ground size based on camera distance
   const groundSize = Math.max(8, cameraDistance * 1.8);
   currentGround.geometry.dispose();
   currentGround.geometry = new THREE.PlaneGeometry(groundSize, groundSize);
 
-  // Single render (no animation loop)
   renderer.render(scene, camera);
 
-  // Aguardar um frame para garantir que tudo foi renderizado
   await new Promise((resolve) => requestAnimationFrame(resolve));
 
-  // Congelar como imagem após 100ms (tempo para garantir renderização completa)
   setTimeout(() => {
     freezeTreeAsImage();
   }, 100);
 };
 
-// Função para atualizar apenas o tema sem recriar tudo
 const updateTheme = async () => {
-  // Se já temos uma imagem, precisamos regenerar
   if (treeImage.value) {
     treeImage.value = null;
     isGenerating.value = true;
@@ -201,13 +192,10 @@ const updateTheme = async () => {
 
   if (!scene || !currentGround || !renderer || !camera || !currentSeed) return;
 
-  // Atualizar cor de fundo da cena
   scene.background = new THREE.Color(props.isDark ? 0x1a1a1a : 0x87ceeb);
 
-  // Recriar textura do chão com novo tema
   const newGrassGround = createGrassGround(currentSeed, props.isDark, 10);
 
-  // Limpar material antigo do chão
   if (currentGround.material) {
     if (currentGround.material.map) {
       currentGround.material.map.dispose();
@@ -215,19 +203,15 @@ const updateTheme = async () => {
     currentGround.material.dispose();
   }
 
-  // Substituir material do chão
   currentGround.material = newGrassGround.material;
 
-  // Re-renderizar
   renderer.render(scene, camera);
 
-  // Recongelar como imagem
   setTimeout(() => {
     freezeTreeAsImage();
   }, 100);
 };
 
-// Watcher para mudanças de tema
 watch(
   () => props.isDark,
   () => {
@@ -258,7 +242,6 @@ onUnmounted(() => {
     cancelAnimationFrame(animationId);
   }
 
-  // Limpeza adequada de recursos Three.js
   if (scene) {
     scene.traverse((child) => {
       if (child.isMesh) {
@@ -294,14 +277,12 @@ onUnmounted(() => {
 
 <template>
   <div ref="canvasContainer" class="tree-grid-cell-canvas">
-    <!-- Mostrar imagem congelada quando pronta -->
     <img
       v-if="treeImage && !isGenerating"
       :src="treeImage"
       alt="Tree"
       class="frozen-tree-image"
     />
-    <!-- Mostrar loading enquanto gera -->
     <div v-else-if="isGenerating" class="generating-indicator">
       <div class="loading-spinner"></div>
     </div>

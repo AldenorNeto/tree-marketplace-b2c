@@ -9,7 +9,6 @@
         class="tree-canvas-3d"
       />
 
-      <!-- Botão de Download -->
       <button
         @click="handleDownloadTree"
         :disabled="treeGenerator?.isGenerating?.()"
@@ -24,7 +23,7 @@
 </template>
 
 <script setup>
-import { Check, Copy, RefreshCw, X, Download } from "lucide-vue-next";
+import { Download } from "lucide-vue-next";
 import { onMounted, ref, watch } from "vue";
 import TreeGenerator3D from "../components/TreeGenerator3D.vue";
 import { useSeeds } from "../composables/useSeeds.js";
@@ -419,20 +418,6 @@ defineExpose({
   opacity: 0.5;
   cursor: not-allowed;
   pointer-events: none;
-}
-
-/* Modal de Dados da Árvore */
-.tree-data-modal {
-  position: absolute;
-  bottom: 24px;
-  right: 24px;
-  backdrop-filter: blur(12px);
-  border-radius: 20px;
-  padding: 0;
-  min-width: 280px;
-  z-index: 10;
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Tema claro - fundo branco */

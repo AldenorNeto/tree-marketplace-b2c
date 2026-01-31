@@ -924,7 +924,6 @@ const initThreeJS = () => {
       isDragging = false;
     });
 
-    // Zoom with mouse wheel
     renderer.domElement.addEventListener("wheel", (event) => {
       event.preventDefault();
       cameraDistance += event.deltaY * 0.01;
@@ -932,7 +931,6 @@ const initThreeJS = () => {
       updateCameraPosition();
     });
 
-    // Touch controls for mobile
     let touchStartDistance = 0;
 
     renderer.domElement.addEventListener("touchstart", (event) => {
@@ -988,15 +986,12 @@ const initThreeJS = () => {
       isDragging = false;
     });
 
-    // Set initial camera position
     updateCameraPosition();
   } else {
-    // Fixed camera position
     camera.position.set(3, 2, 3);
     camera.lookAt(0, 1, 0);
   }
 
-  // Improved lighting
   const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
   scene.add(ambientLight);
 
@@ -1007,19 +1002,16 @@ const initThreeJS = () => {
   directionalLight.shadow.mapSize.height = 1024;
   scene.add(directionalLight);
 
-  // Add a second light for better illumination
   const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
   fillLight.position.set(-5, 5, -5);
   scene.add(fillLight);
 
-  // Ground with grass texture (only if not disabled)
   if (!props.noGrass) {
     const ground = createGrassGround(Date.now(), props.isDark, 20);
     ground.name = "ground"; // Add name for easy reference
     scene.add(ground);
   }
 
-  // Animation loop (no automatic rotation)
   const animate = () => {
     animationId = requestAnimationFrame(animate);
     renderer.render(scene, camera);
@@ -1124,10 +1116,8 @@ watch(
   () => props.isDark,
   () => {
     if (scene) {
-      // Only change background color, don't regenerate tree
       scene.background = new THREE.Color(props.isDark ? 0x1a1a1a : 0x87ceeb);
 
-      // Update ground with new grass texture for theme
       const oldGround = scene.getObjectByName("ground");
       if (oldGround) {
         scene.remove(oldGround);

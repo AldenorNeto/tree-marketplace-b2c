@@ -9,7 +9,7 @@ lerna-debug.log*
 
 node_modules
 .DS_Store
-dist
+# dist - removido para GitHub Pages
 dist-ssr
 coverage
 *.local

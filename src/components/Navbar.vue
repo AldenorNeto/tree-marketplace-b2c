@@ -2,18 +2,32 @@
   <header class="navbar">
     <nav>
       <button
-        @click="setPage('Shop')"
+        @click="setPage(1)"
         :class="{ active: currentPage === 'Shop' }"
         class="nav-button"
       >
         Explore
       </button>
       <button
-        @click="setPage('Create')"
+        @click="setPage(2)"
         :class="{ active: currentPage === 'Create' }"
         class="nav-button"
       >
         Live View
+      </button>
+      <button
+        @click="setPage(3)"
+        :class="{ active: currentPage === 'Registro' }"
+        class="nav-button"
+      >
+        Registro
+      </button>
+      <button
+        @click="setPage(4)"
+        :class="{ active: currentPage === 'Cenario' }"
+        class="nav-button"
+      >
+        Cenário
       </button>
     </nav>
 
@@ -26,19 +40,16 @@
 
 <script setup>
 import { Moon, Sun } from "lucide-vue-next";
-import { useRouter } from "vue-router";
 
 const props = defineProps({
   currentPage: String,
   isDark: Boolean,
 });
 
-const emit = defineEmits(["toggle-theme"]);
+const emit = defineEmits(["toggle-theme", "set-page"]);
 
-const router = useRouter();
-
-const setPage = (page) => {
-  router.push(`/${page.toLowerCase()}`);
+const setPage = (tabNumber) => {
+  emit("set-page", tabNumber);
 };
 
 const toggleTheme = () => {

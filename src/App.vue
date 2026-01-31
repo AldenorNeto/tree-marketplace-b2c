@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Navbar from "./components/Navbar.vue";
 import { useTheme } from "./composables/useTheme.js";
@@ -10,25 +10,28 @@ import ShopView from "./views/ShopView.vue";
 
 const route = useRoute();
 const router = useRouter();
-const currentPage = ref("Create");
 const selectedSeed = ref(null);
 
 const { isDark, toggleTheme } = useTheme();
 
-watch(
-  () => route.meta.page,
-  (newPage) => {
-    if (newPage) {
-      currentPage.value = newPage;
-    }
-  },
-  { immediate: true },
-);
+// Mapeamento de abas por número
+const tabMap = {
+  1: "Shop",
+  2: "Create",
+  3: "Registro",
+  4: "Cenario",
+};
+
+// Aba padrão é Shop (1)
+const currentPage = computed(() => {
+  const abaParam = route.query.aba;
+  const tabNumber = parseInt(abaParam) || 1;
+  return tabMap[tabNumber] || "Shop";
+});
 
 const handleZoomTree = (seed) => {
   selectedSeed.value = seed;
-  currentPage.value = "Create";
-  router.push("/create");
+  router.push("/?aba=2"); // Vai para Create (aba 2)
 };
 
 watch(currentPage, (newPage) => {
@@ -36,6 +39,10 @@ watch(currentPage, (newPage) => {
     selectedSeed.value = null;
   }
 });
+
+const setPage = (tabNumber) => {
+  router.push(`/?aba=${tabNumber}`);
+};
 </script>
 
 <template>
@@ -44,6 +51,7 @@ watch(currentPage, (newPage) => {
       :currentPage="currentPage"
       :isDark="isDark"
       @toggle-theme="toggleTheme"
+      @set-page="setPage"
     />
 
     <main class="content">

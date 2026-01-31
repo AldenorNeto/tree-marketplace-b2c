@@ -4,31 +4,8 @@ import App from "../App.vue";
 const routes = [
   {
     path: "/",
-    redirect: "/shop",
-  },
-  {
-    path: "/create",
-    name: "Create",
+    name: "Home",
     component: App,
-    meta: { page: "Create" },
-  },
-  {
-    path: "/shop",
-    name: "Shop",
-    component: App,
-    meta: { page: "Shop" },
-  },
-  {
-    path: "/registro",
-    name: "Registro",
-    component: App,
-    meta: { page: "Registro" },
-  },
-  {
-    path: "/cenario",
-    name: "Cenario",
-    component: App,
-    meta: { page: "Cenario" },
   },
 ];
 

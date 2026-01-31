@@ -1,5 +1,16 @@
 # Adicionando Novas Abas no Tree Marketplace
 
+## Sistema de Query Parameters
+
+O projeto agora usa um sistema baseado em query parameters (`?aba=1`, `?aba=2`, etc.) ao invés de rotas separadas.
+
+**Mapeamento atual:**
+
+- `?aba=1` → Shop (Explore)
+- `?aba=2` → Create (Live View)
+- `?aba=3` → Registro
+- `?aba=4` → Cenario
+
 ## Processo Completo para Nova Aba
 
 ### 1. Criar a View (src/views/)
@@ -25,15 +36,18 @@ const props = defineProps({
 </style>
 ```
 
-### 2. Registrar Rota (src/router/index.js)
+### 2. Atualizar o tabMap no App.vue
+
+Adicione a nova aba no objeto `tabMap`:
 
 ```javascript
-{
-  path: "/nova-aba",
-  name: "NovaAba",
-  component: App,
-  meta: { page: "NovaAba" },
-}
+const tabMap = {
+  1: "Shop",
+  2: "Create",
+  3: "Registro",
+  4: "Cenario",
+  5: "NovaAba", // ← Adicionar aqui
+};
 ```
 
 ### 3. Adicionar ao App.vue
@@ -121,7 +135,7 @@ import NomesView from "./views/NomesView.vue";
 
 ```vue
 <button
-  @click="setPage('NovaAba')"
+  @click="setPage(5)"
   :class="{ active: currentPage === 'NovaAba' }"
   class="nav-button"
 >
@@ -133,28 +147,37 @@ import NomesView from "./views/NomesView.vue";
 
 - **Props padrão**: `isDark` (Boolean), `initialSeed` (String opcional)
 - **Classe CSS**: `.{nome}-page` para container principal
-- **Rota**: kebab-case no path, PascalCase no name e meta.page
+- **Número da aba**: Próximo número disponível no tabMap
 - **Import**: PascalCase para componente
-- **Navbar**: Texto em português, função `setPage()` com PascalCase
+- **Navbar**: Texto em português, função `setPage(número)` com número da aba
 
-## Exemplo Completo: Aba "Grass"
+## Exemplo Completo: Aba "Grass" (aba 5)
 
 1. **View**: `src/views/CreateGrass.vue`
-2. **Rota**: `{ path: "/grass", name: "grass", meta: { page: "grass" } }`
-3. **App**: `<CreateGrass v-if="currentPage === 'grass'" :isDark="isDark" :initialSeed="selectedSeed" />`
-4. **Navbar**: `<button @click="setPage('grass')" :class="{ active: currentPage === 'grass' }">Grass</button>`
+2. **tabMap**: `5: "CreateGrass"` no App.vue
+3. **Import**: `import CreateGrass from "./views/CreateGrass.vue";` no App.vue
+4. **Template**: `<CreateGrass v-if="currentPage === 'CreateGrass'" :isDark="isDark" :initialSeed="selectedSeed" />` no App.vue
+5. **Navbar**: `<button @click="setPage(5)" :class="{ active: currentPage === 'CreateGrass' }">Grass</button>`
 
 ## Checklist Rápido
 
 - [ ] View criada em `src/views/`
-- [ ] Rota adicionada em `src/router/index.js`
 - [ ] **🚨 CRÍTICO**: Import adicionado em `src/App.vue` (SEM ISSO = ABA BRANCA!)
+- [ ] Número adicionado no `tabMap` em `src/App.vue`
 - [ ] Template adicionado em `src/App.vue` (SÓ DEPOIS DO IMPORT!)
-- [ ] Botão na navbar em `src/components/Navbar.vue`
+- [ ] Botão na navbar em `src/components/Navbar.vue` com número correto
 - [ ] Props `isDark` e `initialSeed` implementadas
 - [ ] Estilos com variáveis CSS do tema
 
 **🔴 LEMBRE-SE: Import primeiro, template depois. Sem import = aba branca!**
+
+## URLs Resultantes
+
+- `/?aba=1` → Shop
+- `/?aba=2` → Create
+- `/?aba=3` → Registro
+- `/?aba=4` → Cenario
+- `/?aba=5` → Nova Aba
 
 ## ⚠️ ERRO MAIS COMUM - ABA BRANCA
 
@@ -181,70 +204,35 @@ import NovaAbaView from "./views/NovaAbaView.vue";
 
 **1. Verificar Import (90% dos casos)**
 
-**🔥 EXEMPLOS DE VERIFICAÇÃO DE IMPORTS:**
-
 ```javascript
-// Abrir src/App.vue e verificar se existe um destes:
-
-// Para TudoNosso.vue:
-import TudoNosso from "./views/TudoNosso.vue";
-
-// Para NadaDeles.vue:
-import NadaDeles from "./views/NadaDeles.vue";
-
-// Para MinhaAba.vue:
-import MinhaAba from "./views/MinhaAba.vue";
-
-// Para ConfigView.vue:
-import ConfigView from "./views/ConfigView.vue";
-
-// Para PerfilUsuario.vue:
-import PerfilUsuario from "./views/PerfilUsuario.vue";
+// Abrir src/App.vue e verificar se existe:
+import NovaAba from "./views/NovaAba.vue";
 
 // 🚨 SE NÃO TIVER O IMPORT = ABA FICA BRANCA!
 ```
 
-**2. Verificar Template**
-
-**🔥 EXEMPLOS DE VERIFICAÇÃO DE TEMPLATES:**
-
-```vue
-<!-- Verificar se existe um destes no template do App.vue: -->
-
-<!-- Para TudoNosso.vue: -->
-<TudoNosso
-  v-if="currentPage === 'TudoNosso'"
-  :isDark="isDark"
-  :initialSeed="selectedSeed"
-/>
-
-<!-- Para NadaDeles.vue: -->
-<NadaDeles
-  v-if="currentPage === 'NadaDeles'"
-  :isDark="isDark"
-  :initialSeed="selectedSeed"
-/>
-
-<!-- Para MinhaAba.vue: -->
-<MinhaAba
-  v-if="currentPage === 'MinhaAba'"
-  :isDark="isDark"
-  :initialSeed="selectedSeed"
-/>
-
-<!-- 🚨 LEMBRE-SE: Nome do componente = Nome do arquivo! -->
-```
-
-**3. Verificar Rota**
+**2. Verificar tabMap**
 
 ```javascript
-// Verificar se existe em src/router/index.js:
-{
-  path: "/nova-aba",
-  name: "NovaAba",
-  component: App,
-  meta: { page: "NovaAba" },
-}
+// Verificar se existe no tabMap do App.vue:
+const tabMap = {
+  1: "Shop",
+  2: "Create",
+  3: "Registro",
+  4: "Cenario",
+  5: "NovaAba", // ← Deve estar aqui
+};
+```
+
+**3. Verificar Template**
+
+```vue
+<!-- Verificar se existe no template do App.vue: -->
+<NovaAba
+  v-if="currentPage === 'NovaAba'"
+  :isDark="isDark"
+  :initialSeed="selectedSeed"
+/>
 ```
 
 **4. Verificar Navbar**
@@ -252,7 +240,7 @@ import PerfilUsuario from "./views/PerfilUsuario.vue";
 ```vue
 <!-- Verificar se existe em src/components/Navbar.vue: -->
 <button
-  @click="setPage('NovaAba')"
+  @click="setPage(5)"
   :class="{ active: currentPage === 'NovaAba' }"
   class="nav-button"
 >
@@ -264,6 +252,6 @@ import PerfilUsuario from "./views/PerfilUsuario.vue";
 
 1. 🔴 **Import ausente no App.vue** (90% dos casos)
 2. 🟡 Template ausente no App.vue
-3. 🟡 Rota ausente no router
+3. 🟡 Número ausente no tabMap
 4. 🟢 Botão ausente na navbar
 5. 🟢 Props incorretas na view

@@ -102,7 +102,6 @@ function createTerrain() {
     heightSegments,
   );
 
-  // Generate height map and river
   const vertices = geometry.attributes.position.array;
   const colors = new Float32Array(vertices.length);
 
@@ -110,7 +109,6 @@ function createTerrain() {
     const x = vertices[i];
     const z = vertices[i + 1];
 
-    // Large-scale terrain using improved Perlin-like noise
     let elevation = 0;
 
     // Large gentle undulations
@@ -127,53 +125,66 @@ function createTerrain() {
       Math.cos(z * 0.007) * 35;
 
     const distanceFromRiver = Math.abs(x - riverCenterX);
-    const riverWidth = 15 + Math.random() * 3; // Variable river width
-    const bankWidth = 20 + Math.random() * 5; // Variable bank width
+    const riverWidth = 25 + Math.random() * 3; // Variable river width
+    const bankWidth = 20 + Math.random() * 1; // Variable bank width
 
     const riverInfluence = Math.max(
       0,
       1 - distanceFromRiver / (riverWidth + bankWidth + 40),
     );
-    const ultraSmoothFalloff = smoothstep(riverInfluence); // Custom smoothstep
+    const ultraSmoothFalloff = smoothstep(riverInfluence);
+
+    let baseElevation = 0;
+    baseElevation += Math.abs(perlinNoise(x, z, 8));
+    baseElevation += Math.abs(perlinNoise(x + 100, z + 50, 0.0012)) * 4;
+    baseElevation += Math.abs(perlinNoise(x - 50, z + 100, 0.0015)) * 3;
+    baseElevation += Math.abs(perlinNoise(x, z, 0.003));
+
     elevation -= ultraSmoothFalloff * 2.5;
 
-    // Large-scale color regions using Perlin noise
     if (distanceFromRiver < riverWidth) {
-      // River water
+      elevation = -2;
+    } else if (distanceFromRiver < riverWidth + bankWidth) {
+      const transitionFactor = (distanceFromRiver - riverWidth) / bankWidth;
+      const smoothTransition = smoothstep(transitionFactor);
+
+      const minTerrainHeight = 1;
+      const finalTerrainHeight = (minTerrainHeight + baseElevation) / 2;
+      elevation =
+        -2 * (1 - smoothTransition) + finalTerrainHeight * smoothTransition;
+    } else {
+      elevation = (baseElevation + elevation + 5) / 2;
+    }
+
+    if (distanceFromRiver < riverWidth) {
       colors[i] = 0.1;
       colors[i + 1] = 0.6;
       colors[i + 2] = 0.9;
     } else {
-      // Calculate smooth color transitions
       const bankDistance = distanceFromRiver - riverWidth;
       const bankFactor = Math.min(1, bankDistance / bankWidth);
 
-      // Ultra smooth transition
       const smoothBankFactor = smoothstep(bankFactor);
 
       const largeColorNoise = perlinNoise(x, z, 0.004) * 0.15;
       const mediumColorNoise = perlinNoise(x + 200, z + 150, 0.008) * 0.1;
       const fineColorNoise = perlinNoise(x - 100, z + 300, 0.015) * 0.06;
 
-      // Base colors
       const sandR = 0.72;
       const sandG = 0.62;
       const sandB = 0.42;
 
-      // Grass base color with large-scale Perlin variation
-      const grassR = 0.32 + largeColorNoise;
+      const grassR = 0.22 + largeColorNoise;
       const grassG = 0.62 + largeColorNoise + mediumColorNoise;
-      const grassB = 0.22 + largeColorNoise * 0.5;
+      const grassB = 0.2 + largeColorNoise * 0.5;
 
       if (bankDistance < bankWidth) {
-        // Ultra smooth interpolation from sand to grass
         colors[i] = sandR * (1 - smoothBankFactor) + grassR * smoothBankFactor;
         colors[i + 1] =
           sandG * (1 - smoothBankFactor) + grassG * smoothBankFactor;
         colors[i + 2] =
           sandB * (1 - smoothBankFactor) + grassB * smoothBankFactor;
       } else {
-        // Pure grassland with large, smooth Perlin-based color patches
         const elevationInfluence = (elevation + 6) / 14;
         const elevationFactor = Math.max(0, Math.min(1, elevationInfluence));
 
@@ -245,17 +256,6 @@ function createTerrain() {
   terrain.rotation.x = -Math.PI / 2;
   terrain.receiveShadow = true;
   scene.add(terrain);
-}
-
-// Simple noise function for terrain variation
-function noise(x, y) {
-  return (
-    (Math.sin(x * 1.2) +
-      Math.sin(y * 1.5) +
-      Math.sin((x + y) * 0.8) +
-      Math.sin((x - y) * 0.6)) *
-    0.25
-  );
 }
 
 // Improved Perlin-like noise function with larger, smoother patterns

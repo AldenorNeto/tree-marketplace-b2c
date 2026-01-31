@@ -1,0 +1,12 @@
+RewriteEngine On
+
+# Redirecionamentos para o novo sistema
+RewriteRule ^shop/?$ /?aba=1 [R=301,L]
+RewriteRule ^create/?$ /?aba=2 [R=301,L]
+RewriteRule ^registro/?$ /?aba=3 [R=301,L]
+RewriteRule ^cenario/?$ /?aba=4 [R=301,L]
+
+# SPA fallback
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.html [L]

@@ -13,4 +13,7 @@ export default defineConfig({
     },
   },
   base: "/tree-marketplace-b2c/",
+  build: {
+    outDir: "docs",
+  },
 });

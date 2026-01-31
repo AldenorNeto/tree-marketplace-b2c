@@ -1,0 +1,8 @@
+# Redirecionamentos para o novo sistema de query parameters
+/shop           /?aba=1
+/create         /?aba=2
+/registro       /?aba=3
+/cenario        /?aba=4
+
+# Fallback para SPA
+/*              /index.html   200
